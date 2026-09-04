@@ -29,7 +29,7 @@
 <div
   class="
     relative min-h-screen flex flex-col items-center justify-center
-    px-5 py-24
+    px-5 py-24 overflow-hidden
     bg-zinc-50 dark:bg-zinc-950
     transition-colors duration-200
   "
@@ -53,7 +53,7 @@
   </div>
 
   <!-- Top-right nav CTAs -->
-  <div class="fixed top-4 right-4 z-102 flex items-center gap-2">
+  <div class="fixed top-5.5 right-4 z-102 flex items-center gap-2">
     <a
       href="/auth/login"
       class="
@@ -82,11 +82,12 @@
     </a>
   </div>
 
-  <div class="relative z-10 flex flex-col items-center w-full max-w-sm">
+  <!-- Main Content Wrapper -->
+  <div class="relative z-10 flex flex-col items-center w-full max-w-sm lg:max-w-xl lg:items-start lg:mr-48">
 
     <!-- Logo mark -->
-    <div class="mb-7 flex items-center gap-3">
-      <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-500">
+    <div class="mb-7 items-center gap-3 hidden sm:flex">
+      <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-500 shadow-lg shadow-brand-500/20">
         <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="white">
           <path d="M11.192 15.757c0-.88-.23-1.618-.69-2.217-.326-.412-.768-.683-1.327-.812-.55-.128-1.07-.137-1.54-.028-.16-.95.1-1.956.76-3.022.66-1.065 1.515-1.867 2.558-2.403L9.373 5c-.8.396-1.56.898-2.26 1.505-.71.607-1.34 1.305-1.9 2.094s-.98 1.68-1.25 2.69-.346 2.04-.217 3.1c.168 1.4.62 2.52 1.356 3.35.735.84 1.652 1.26 2.748 1.26.965 0 1.766-.29 2.4-.878.628-.576.94-1.365.94-2.365zm9.124 0c0-.88-.23-1.618-.69-2.217-.326-.42-.77-.692-1.327-.817-.56-.124-1.074-.13-1.54-.022-.16-.94.09-1.95.75-3.02.66-1.06 1.514-1.86 2.557-2.4L18.49 5c-.8.396-1.555.898-2.26 1.505-.708.607-1.34 1.305-1.894 2.094-.556.79-.97 1.68-1.24 2.69-.273 1-.345 2.04-.217 3.1.168 1.4.62 2.52 1.356 3.35.735.84 1.652 1.26 2.748 1.26.965 0 1.766-.29 2.4-.878.628-.576.94-1.365.94-2.365z"/>
         </svg>
@@ -97,8 +98,8 @@
     <!-- Headline -->
     <h1
       class="
-        text-[2.6rem] sm:text-5xl font-extrabold tracking-tight leading-[1.06]
-        text-center text-zinc-900 dark:text-zinc-50
+        text-[2.6rem] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.06]
+        text-center lg:text-left text-zinc-900 dark:text-zinc-50
       "
     >
       Save the quotes<br />
@@ -115,16 +116,16 @@
     <!-- Subline -->
     <p
       class="
-        mt-4 text-[15px] leading-relaxed text-center
+        mt-4 text-[15px] sm:text-base leading-relaxed text-center lg:text-left
         text-zinc-500 dark:text-zinc-400
-        max-w-65
+        max-w-md
       "
     >
       Save funny quotes with your group — filter, favorite, and play quizzes.
     </p>
 
     <!-- Divider -->
-    <div class="mt-14 mb-6 flex items-center gap-3 w-full">
+    <div class="mt-10 mb-6 flex items-center gap-3 w-full">
       <div class="flex-1 h-px bg-zinc-900/6 dark:bg-white/6"></div>
       <p class="text-[11px] font-medium tracking-widest uppercase text-zinc-400 dark:text-zinc-600 shrink-0">
         Popular quotes
@@ -144,7 +145,6 @@
             shadow-[0_1px_4px_rgba(0,0,0,0.05)] dark:shadow-none
           "
         >
-          <!-- Color dot / avatar — per-quote generated color, kept as inline data (see spec: auto-generated color per quote) -->
           <div
             class="shrink-0 flex items-center justify-center w-7 h-7 rounded-full mt-0.5 text-white text-[11px] font-bold"
             style="background-color: {item.color};"
@@ -165,9 +165,62 @@
     </div>
 
     <!-- Bottom hint -->
-    <p class="mt-6 text-[12px] text-zinc-400 dark:text-zinc-600 text-center">
+    <p class="mt-6 text-[12px] text-zinc-400 dark:text-zinc-600 text-center lg:text-left">
       Join a room with a code from your group.
     </p>
 
+  </div>
+
+  <!-- Schuine Mockup Screenshot / UI Card (loopt half van het scherm af aan de rechterkant op desktop) -->
+  <div
+    class="
+      hidden lg:block absolute -right-40 top-1/2 -translate-y-1/2
+      w-160 pointer-events-none select-none z-0
+      transform rotate-6 skew-y-3 scale-105
+      opacity-95 dark:opacity-90
+    "
+  >
+    <div
+      class="
+        rounded-3xl bg-white dark:bg-zinc-900
+        border border-black/10 dark:border-white/10
+        shadow-2xl shadow-brand-500/10 p-6
+        overflow-hidden
+      "
+    >
+      <!-- Nep app-interface / mockup content om de schermafbeelding na te bootsen -->
+      <div class="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-red-400"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+          <div class="w-3 h-3 rounded-full bg-green-400"></div>
+        </div>
+        <div class="h-4 w-32 rounded-md bg-zinc-100 dark:bg-zinc-800"></div>
+      </div>
+      
+      <div class="space-y-3 opacity-80">
+        <div class="h-20 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 p-4 border border-zinc-100 dark:border-zinc-800 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-brand-500/20 shrink-0"></div>
+          <div class="space-y-2 flex-1">
+            <div class="h-3 w-3/4 rounded bg-zinc-200 dark:bg-zinc-700"></div>
+            <div class="h-2.5 w-1/2 rounded bg-zinc-100 dark:bg-zinc-800"></div>
+          </div>
+        </div>
+        <div class="h-20 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 p-4 border border-zinc-100 dark:border-zinc-800 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-emerald-500/20 shrink-0"></div>
+          <div class="space-y-2 flex-1">
+            <div class="h-3 w-4/5 rounded bg-zinc-200 dark:bg-zinc-700"></div>
+            <div class="h-2.5 w-1/3 rounded bg-zinc-100 dark:bg-zinc-800"></div>
+          </div>
+        </div>
+        <div class="h-20 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 p-4 border border-zinc-100 dark:border-zinc-800 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-amber-500/20 shrink-0"></div>
+          <div class="space-y-2 flex-1">
+            <div class="h-3 w-2/3 rounded bg-zinc-200 dark:bg-zinc-700"></div>
+            <div class="h-2.5 w-2/5 rounded bg-zinc-100 dark:bg-zinc-800"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
