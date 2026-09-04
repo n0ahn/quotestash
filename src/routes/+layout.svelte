@@ -4,6 +4,10 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import ProfileMenu from '$lib/components/ProfileMenu.svelte';
+	import { dev } from '$app/environment';
+	import { injectAnalytics } from '@vercel/analytics/sveltekit';
+
+	injectAnalytics({ mode: dev ? 'development' : 'production' });
 
 	let { children } = $props();
 
