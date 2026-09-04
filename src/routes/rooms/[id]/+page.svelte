@@ -1,353 +1,614 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
   import { supabase, getCurrentProfile } from '$lib/supabase';
+  import {
+    Sparkles,
+    TrendingUp,
+    TrendingDown,
+    Minus,
+    Heart,
+    MessageCircle,
+    Quote as QuoteIcon,
+    Users,
+    Flame,
+    Trophy,
+    Zap,
+    Star,
+    Crown,
+    Hash,
+    PartyPopper,
+    Brain,
+    Target,
+    EyeOff,
+    Ruler,
+    CalendarDays,
+    Rows3
+  } from 'lucide-svelte';
   import type { QuoteWithDetails } from '$lib/database.types';
 
-  const COLOR_PALETTE = [
-    '#5B50F0', // Brand purple
-    '#EC4899', // Pink
-    '#F59E0B', // Amber
-    '#10B981', // Emerald
-    '#3B82F6', // Blue
-    '#8B5CF6'  // Violet
-  ];
+  const roomId = $derived(page.params.id!);
 
-  let roomId = $derived(page.params.id);
-  let profile = $state<any>(null);
-  let room = $state<any>(null);
-  let quotes = $state<QuoteWithDetails[]>([]);
+  type Member = { id: string; first_name: string };
+
   let loading = $state(true);
+  let firstName = $state('');
+  let quotes = $state<QuoteWithDetails[]>([]);
+  let favoriteCounts = $state<Record<string, number>>({});
+  let commentCounts = $state<Record<string, number>>({});
+  let members = $state<Member[]>([]);
+  let quizRows = $state<{ user_id: string; correct_count: number; total_count: number }[]>([]);
 
-  // Add Quote State
-  let showAdd = $state(false);
-  let content = $state('');
-  let saidBy = $state('');
-  let selectedColor = $state(COLOR_PALETTE[0]);
-  let rawTags = $state('');
-  let isNsfw = $state(false);
-  let addLoading = $state(false);
-  let addError = $state('');
+  function colorFromString(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 70%, 60%)`;
+  }
 
-  // UI state
-  let copiedCode = $state(false);
+  function quoteLength(q: QuoteWithDetails): number {
+    return q.lines.reduce((sum, l) => sum + l.text.length, 0);
+  }
+
+  function daysAgo(n: number): Date {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - n);
+    return d;
+  }
+
+  function sameDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
 
   async function loadData() {
     loading = true;
-    const p = (await getCurrentProfile()) as any;
-    if (!p) { goto('/auth/login'); return; }
-    profile = p;
 
-    // Fetch Room
-    const { data: roomData, error: roomError } = await (supabase
-      .from('rooms') as any)
-      .select('*')
-      .eq('id', roomId)
-      .single();
+    const profile = await getCurrentProfile();
+    firstName = profile?.first_name ?? '';
 
-    if (roomError || !roomData) {
-      goto('/rooms');
-      return;
+    const { data: quotesData, error: quotesError } = await supabase
+      .from('quotes')
+      .select('*, adder:users!quotes_added_by_fkey(id, first_name)')
+      .eq('room_id', roomId);
+
+    if (quotesError) console.error('quotes load error', quotesError);
+
+    quotes = ((quotesData ?? []) as any[]).map((q) => ({
+      ...q,
+      adder: Array.isArray(q.adder) ? q.adder[0] : q.adder
+    })) as QuoteWithDetails[];
+
+    const quoteIds = quotes.map((q) => q.id);
+
+    if (quoteIds.length > 0) {
+      const { data: favData } = await supabase.from('quote_favorites').select('quote_id').in('quote_id', quoteIds);
+      const fCounts: Record<string, number> = {};
+      for (const row of favData ?? []) fCounts[row.quote_id] = (fCounts[row.quote_id] ?? 0) + 1;
+      favoriteCounts = fCounts;
+
+      const { data: commentData } = await supabase.from('quote_comments').select('quote_id').in('quote_id', quoteIds);
+      const cCounts: Record<string, number> = {};
+      for (const row of commentData ?? []) cCounts[row.quote_id] = (cCounts[row.quote_id] ?? 0) + 1;
+      commentCounts = cCounts;
+    } else {
+      favoriteCounts = {};
+      commentCounts = {};
     }
-    room = roomData;
 
-    // Fetch Quotes for this room with author profile info
-    await fetchQuotes();
+    const { data: membersData, error: membersError } = await supabase
+      .from('room_members')
+      .select('user_id, users(id, first_name)')
+      .eq('room_id', roomId);
+
+    if (membersError) console.error('members load error', membersError);
+
+    members = ((membersData ?? []) as any[])
+      .filter((m) => m.users)
+      .map((m) => {
+        const u = Array.isArray(m.users) ? m.users[0] : m.users;
+        return { id: u!.id as string, first_name: u!.first_name as string };
+      });
+
+    const { data: quizData, error: quizError } = await supabase
+      .from('quiz_results')
+      .select('user_id, correct_count, total_count')
+      .eq('room_id', roomId);
+
+    if (quizError) console.error('quiz results load error', quizError);
+    quizRows = quizData ?? [];
+
     loading = false;
   }
 
-  async function fetchQuotes() {
-    const { data, error } = await (supabase
-      .from('quotes') as any)
-      .select(`
-        *,
-        adder:users!quotes_added_by_fkey(first_name)
-      `)
-      .eq('room_id', roomId)
-      .order('created_at', { ascending: false });
+  // ---------- headline stats ----------
+  const totalQuotes = $derived(quotes.length);
+  const totalLikes = $derived(Object.values(favoriteCounts).reduce((a, b) => a + b, 0));
+  const totalComments = $derived(Object.values(commentCounts).reduce((a, b) => a + b, 0));
+  const totalMembers = $derived(members.length);
 
-    if (!error && data) {
-      quotes = data;
+  const quotesThisWeek = $derived.by(() => {
+    const cutoff = daysAgo(7);
+    return quotes.filter((q) => new Date(q.created_at) >= cutoff).length;
+  });
+  const quotesPrevWeek = $derived.by(() => {
+    const start = daysAgo(14);
+    const end = daysAgo(7);
+    return quotes.filter((q) => {
+      const d = new Date(q.created_at);
+      return d >= start && d < end;
+    }).length;
+  });
+  const weekTrend = $derived.by((): { direction: 'up' | 'down' | 'flat'; pct: number } => {
+    if (quotesPrevWeek === 0) {
+      return { direction: quotesThisWeek > 0 ? 'up' : 'flat', pct: quotesThisWeek > 0 ? 100 : 0 };
     }
-  }
+    const diff = quotesThisWeek - quotesPrevWeek;
+    const pct = Math.round((Math.abs(diff) / quotesPrevWeek) * 100);
+    return { direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat', pct };
+  });
 
-  async function handleAddQuote(e: SubmitEvent) {
-    e.preventDefault();
-    if (!content.trim() || !saidBy.trim() || !profile) return;
-
-    addLoading = true;
-    addError = '';
-
-    const parsedTags = rawTags
-      .split(',')
-      .map((t) => t.trim().toLowerCase())
-      .filter((t) => t.length > 0);
-
-    const { error } = await (supabase.from('quotes') as any).insert({
-      room_id: roomId,
-      added_by: profile.id,
-      said_by: saidBy.trim(),
-      content: content.trim(),
-      color: selectedColor,
-      tags: parsedTags,
-      is_nsfw: isNsfw
-    });
-
-    addLoading = false;
-
-    if (error) {
-      addError = error.message;
-      return;
+  // ---------- 14-day activity chart ----------
+  const activityDays = $derived.by(() => {
+    const days: { date: Date; label: string; count: number }[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = daysAgo(i);
+      const count = quotes.filter((q) => sameDay(new Date(q.created_at), d)).length;
+      days.push({
+        date: d,
+        label: d.toLocaleDateString(undefined, { weekday: 'narrow' }),
+        count
+      });
     }
+    return days;
+  });
+  const maxDayCount = $derived(Math.max(1, ...activityDays.map((d) => d.count)));
 
-    // Reset Form
-    content = '';
-    saidBy = '';
-    rawTags = '';
-    isNsfw = false;
-    showAdd = false;
-
-    await fetchQuotes();
-  }
-
-  async function deleteQuote(quoteId: string) {
-    if (!confirm('Are you sure you want to delete this quote?')) return;
-
-    const { error } = await (supabase.from('quotes') as any)
-      .delete()
-      .eq('id', quoteId);
-
-    if (!error) {
-      quotes = quotes.filter((q) => q.id !== quoteId);
+  // ---------- spotlight: most loved quote ----------
+  const spotlightQuote = $derived.by(() => {
+    if (quotes.length === 0) return null;
+    let best: { quote: QuoteWithDetails; favorites: number; comments: number } | null = null;
+    for (const q of quotes) {
+      const favorites = favoriteCounts[q.id] ?? 0;
+      const comments = commentCounts[q.id] ?? 0;
+      if (!best || favorites > best.favorites) {
+        best = { quote: q, favorites, comments };
+      }
     }
-  }
+    return best;
+  });
 
-  function copyCode() {
-    if (!room?.code) return;
-    navigator.clipboard.writeText(room.code);
-    copiedCode = true;
-    setTimeout(() => { copiedCode = false; }, 2000);
-  }
+  // ---------- fun facts ----------
+  const longestQuote = $derived.by(() => {
+    if (quotes.length === 0) return null;
+    return [...quotes].sort((a, b) => quoteLength(b) - quoteLength(a))[0];
+  });
+
+  const spiciestCount = $derived(quotes.filter((q) => q.is_nsfw).length);
+
+  const avgLinesPerQuote = $derived.by(() => {
+    if (quotes.length === 0) return 0;
+    return quotes.reduce((sum, q) => sum + q.lines.length, 0) / quotes.length;
+  });
+
+  const busiestWeekday = $derived.by(() => {
+    if (quotes.length === 0) return null;
+    const counts: Record<number, number> = {};
+    for (const q of quotes) {
+      const day = new Date(q.created_at).getDay();
+      counts[day] = (counts[day] ?? 0) + 1;
+    }
+    const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (!best) return null;
+    const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return { name: names[Number(best[0])], count: best[1] };
+  });
+
+  const firstQuoteDate = $derived.by(() => {
+    if (quotes.length === 0) return null;
+    return quotes.reduce((min, q) => (new Date(q.created_at) < new Date(min.created_at) ? q : min), quotes[0]);
+  });
+
+  const daysSinceStart = $derived.by(() => {
+    if (!firstQuoteDate) return 0;
+    const diffMs = Date.now() - new Date(firstQuoteDate.created_at).getTime();
+    return Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+  });
+
+  // ---------- tag cloud ----------
+  const tagCloud = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const q of quotes) {
+      for (const tag of q.tags ?? []) counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([tag, count]) => ({ tag, count }));
+  });
+  const maxTagCount = $derived(Math.max(1, ...tagCloud.map((t) => t.count)));
+
+  // ---------- top quoter / top quoted / quiz champ ----------
+  const topQuoter = $derived.by(() => {
+    const counts: Record<string, { name: string; count: number; likes: number }> = {};
+    for (const q of quotes) {
+      if (!q.adder) continue;
+      const fav = favoriteCounts[q.id] ?? 0;
+      if (!counts[q.adder.id]) counts[q.adder.id] = { name: q.adder.first_name, count: 0, likes: 0 };
+      counts[q.adder.id].count += 1;
+      counts[q.adder.id].likes += fav;
+    }
+    const arr = Object.values(counts).sort((a, b) => b.count - a.count);
+    return arr[0] ?? null;
+  });
+
+  const topQuoted = $derived.by(() => {
+    const counts: Record<string, { name: string; favorites: number; quoteCount: number }> = {};
+    for (const q of quotes) {
+      const fav = favoriteCounts[q.id] ?? 0;
+      const seen = new Set<string>();
+      for (const line of q.lines) {
+        if (seen.has(line.said_by)) continue;
+        seen.add(line.said_by);
+        if (!counts[line.said_by]) counts[line.said_by] = { name: line.said_by, favorites: 0, quoteCount: 0 };
+        counts[line.said_by].favorites += fav;
+        counts[line.said_by].quoteCount += 1;
+      }
+    }
+    const arr = Object.values(counts).sort((a, b) => b.favorites - a.favorites);
+    return arr[0] ?? null;
+  });
+
+  const quizChampion = $derived.by(() => {
+    const stats: Record<string, { correct: number; total: number; played: number }> = {};
+    for (const row of quizRows) {
+      if (!stats[row.user_id]) stats[row.user_id] = { correct: 0, total: 0, played: 0 };
+      stats[row.user_id].correct += row.correct_count;
+      stats[row.user_id].total += row.total_count;
+      stats[row.user_id].played += 1;
+    }
+    let best: { id: string; accuracy: number; played: number } | null = null;
+    for (const [id, s] of Object.entries(stats)) {
+      if (s.total === 0) continue;
+      const accuracy = (s.correct / s.total) * 100;
+      if (!best || accuracy > best.accuracy) best = { id, accuracy, played: s.played };
+    }
+    if (!best) return null;
+    const member = members.find((m) => m.id === best!.id);
+    return { name: member?.first_name ?? 'Someone', accuracy: best.accuracy, played: best.played };
+  });
+
+  const heroCards = $derived([
+    { label: 'Quotes', value: totalQuotes, icon: QuoteIcon, gradient: 'from-brand-400 to-brand-600', glow: 'shadow-brand-500/25' },
+    { label: 'Likes', value: totalLikes, icon: Heart, gradient: 'from-rose-400 to-red-500', glow: 'shadow-red-500/25' },
+    { label: 'Comments', value: totalComments, icon: MessageCircle, gradient: 'from-sky-400 to-blue-500', glow: 'shadow-blue-500/25' },
+    { label: 'Members', value: totalMembers, icon: Users, gradient: 'from-emerald-400 to-teal-500', glow: 'shadow-emerald-500/25' }
+  ]);
 
   onMount(loadData);
 </script>
 
 <svelte:head>
-  <title>{room ? room.name : 'Room'} · QuoteStash</title>
+  <title>Dashboard · QuoteStash</title>
 </svelte:head>
 
-<div class="min-h-screen w-full px-70 bg-surface-50 dark:bg-zinc-950 transition-colors duration-200">
+<div class="px-5 sm:px-8 py-8 sm:py-10 max-w-5xl">
+  <div class="flex items-center gap-2.5 mb-1">
+    <div class="flex items-center justify-center w-9 h-9 rounded-2xl bg-linear-to-br from-brand-400 to-brand-600 shadow-sm shadow-brand-500/30 shrink-0">
+      <Sparkles size={18} class="text-white" strokeWidth={2.2} />
+    </div>
+    <h1 class="text-xl font-bold text-surface-900 dark:text-surface-50">Dashboard</h1>
+  </div>
+  <p class="text-[13px] text-surface-500 dark:text-surface-400 mt-1 ml-11.5">
+    {firstName ? `Welcome back, ${firstName}. ` : ''}Here's what's happening in this stash.
+  </p>
 
-  <!-- Header -->
-  <header class="relative z-10 flex items-center justify-between px-6 sm:px-12 pt-6 pb-4 w-full border-b border-surface-200/60 dark:border-surface-800/60">
-    <div class="flex items-center gap-4">
-      <a
-        href="/rooms"
-        class="h-10 w-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-        aria-label="Back to rooms"
-      >
-        ←
-      </a>
-      {#if room}
-        <div>
-          <h1 class="text-xl font-extrabold text-surface-900 dark:text-surface-50 flex items-center gap-2">
-            {room.name}
-            {#if room.owner_id === profile?.id}
-              <span class="text-sm" title="Owner">👑</span>
-            {/if}
-          </h1>
-          <button
-            onclick={copyCode}
-            class="text-xs font-mono text-surface-400 dark:text-surface-500 hover:text-brand-500 transition-colors flex items-center gap-1.5 mt-0.5"
-          >
-            CODE: <span class="font-bold tracking-wider underline">{room.code}</span>
-            <span>{copiedCode ? '✓ Copied!' : '📋'}</span>
-          </button>
+  {#if loading}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-7">
+      {#each Array(4) as _}
+        <div class="h-24 rounded-3xl bg-surface-100 dark:bg-surface-900 animate-pulse"></div>
+      {/each}
+    </div>
+    <div class="h-40 rounded-3xl bg-surface-100 dark:bg-surface-900 animate-pulse mt-4"></div>
+    <div class="grid sm:grid-cols-2 gap-4 mt-4">
+      <div class="h-56 rounded-3xl bg-surface-100 dark:bg-surface-900 animate-pulse"></div>
+      <div class="h-56 rounded-3xl bg-surface-100 dark:bg-surface-900 animate-pulse"></div>
+    </div>
+  {:else if totalQuotes === 0}
+    <div class="flex flex-col items-center justify-center py-24 text-center px-4">
+      <PartyPopper size={28} class="text-surface-300 dark:text-surface-700 mb-3" />
+      <p class="text-[14px] font-medium text-surface-500 dark:text-surface-400 max-w-sm">
+        No quotes yet — add the first one and this dashboard will come to life.
+      </p>
+    </div>
+  {:else}
+    <!-- Hero stat cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-7">
+      {#each heroCards as card (card.label)}
+        <div class="relative flex flex-col justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-linear-to-br {card.gradient} shadow-lg {card.glow} overflow-hidden min-h-26">
+          <div class="absolute -right-5 -bottom-5 w-20 h-20 rounded-full bg-white/10"></div>
+          <div class="relative flex items-center justify-center w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm">
+            <card.icon size={15} class="text-white" strokeWidth={2.3} />
+          </div>
+          <div class="relative">
+            <p class="text-[24px] sm:text-[28px] font-extrabold text-white leading-none">{card.value}</p>
+            <p class="text-[11px] font-semibold text-white/85 mt-1 uppercase tracking-wide">{card.label}</p>
+          </div>
         </div>
-      {/if}
+      {/each}
     </div>
 
-    <button
-      onclick={() => { showAdd = !showAdd; }}
-      class="h-10 sm:h-11 px-4.5 sm:px-5 rounded-xl text-sm sm:text-base font-semibold text-brand-50 bg-brand-500 hover:bg-brand-600 shadow-md shadow-brand-500/25 transition-colors"
-    >
-      + Add quote
-    </button>
-  </header>
+    <!-- Activity chart -->
+    <div class="mt-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-5">
+        <div>
+          <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide">Last 14 days</h2>
+          <p class="text-[11.5px] text-surface-400 dark:text-surface-500 mt-0.5">Quotes added per day</p>
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold
+          {weekTrend.direction === 'up' ? 'bg-emerald-500/10 text-emerald-500' : weekTrend.direction === 'down' ? 'bg-red-500/10 text-red-500' : 'bg-surface-100 dark:bg-surface-800 text-surface-400'}">
+          {#if weekTrend.direction === 'up'}
+            <TrendingUp size={13} />
+          {:else if weekTrend.direction === 'down'}
+            <TrendingDown size={13} />
+          {:else}
+            <Minus size={13} />
+          {/if}
+          {weekTrend.pct}% vs last week
+        </div>
+      </div>
 
-  <!-- Main content -->
-  <main class="relative z-10 px-70 sm:px-12 py-8 w-full">
+      <div class="flex items-end justify-between gap-1.5 sm:gap-2 h-32">
+        {#each activityDays as day (day.date.toISOString())}
+          <div class="flex-1 flex flex-col items-center justify-end gap-1.5 h-full group">
+            <span class="text-[10px] font-bold text-surface-500 dark:text-surface-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              {day.count}
+            </span>
+            <div
+              class="w-full rounded-lg bg-linear-to-t from-brand-500 to-brand-400 dark:from-brand-600 dark:to-brand-400 transition-all hover:opacity-80"
+              style="height: {Math.max(6, (day.count / maxDayCount) * 100)}%; {day.count === 0 ? 'opacity: 0.15;' : ''}"
+              title="{day.count} on {day.date.toLocaleDateString()}"
+            ></div>
+            <span class="text-[9.5px] font-semibold text-surface-400 dark:text-surface-500">{day.label}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
 
-    <!-- Add Quote Modal/Drawer -->
-    {#if showAdd}
-      <div class="mb-8 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-xl px-6 py-6 w-full">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-surface-900 dark:text-surface-100">Add new quote</h2>
-          <button
-            type="button"
-            onclick={() => { showAdd = false; }}
-            class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 text-lg"
-          >✕</button>
+    <!-- Spotlight quote -->
+    {#if spotlightQuote && spotlightQuote.favorites > 0}
+      {@const accentColor = spotlightQuote.quote.color || colorFromString(spotlightQuote.quote.id)}
+      <a
+        href="/rooms/{roomId}/quotes/{spotlightQuote.quote.id}"
+        class="mt-4 relative flex flex-col gap-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+      >
+        <div class="absolute top-0 left-0 right-0 h-1" style="background-color: {accentColor};"></div>
+
+        <div class="flex items-center gap-1.5 text-amber-500">
+          <Star size={13} fill="currentColor" />
+          <span class="text-[11px] font-bold uppercase tracking-wide">Most loved quote</span>
         </div>
 
-        <form onsubmit={handleAddQuote} class="flex flex-col gap-4">
-          {#if addError}
-            <p class="text-sm text-red-500">{addError}</p>
-          {/if}
-
-          <div>
-            <label for="content" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Quote content</label>
-            <textarea
-              id="content"
-              required
-              rows={3}
-              bind:value={content}
-              placeholder="What did they say?"
-              class="w-full p-3.5 rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-sm"
-            ></textarea>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label for="saidBy" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Who said it?</label>
-              <input
-                id="saidBy"
-                type="text"
-                required
-                bind:value={saidBy}
-                placeholder="Name"
-                class="w-full h-11 px-4 rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-sm"
-              />
-            </div>
-
-            <div>
-              <label for="tags" class="block text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Tags (comma separated)</label>
-              <input
-                id="tags"
-                type="text"
-                bind:value={rawTags}
-                placeholder="funny, late-night, classic"
-                class="w-full h-11 px-4 rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-sm"
-              />
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
-            <!-- Accent color selection -->
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">Card Color:</span>
-              <div class="flex items-center gap-1.5">
-                {#each COLOR_PALETTE as c}
-                  <button
-                    type="button"
-                    onclick={() => { selectedColor = c; }}
-                    class="w-7 h-7 rounded-full transition-transform border-2 {selectedColor === c ? 'scale-110 border-surface-900 dark:border-surface-50' : 'border-transparent'}"
-                    style="background-color: {c};"
-                    aria-label="Color selector"
-                  ></button>
-                {/each}
+        <div class="flex flex-col gap-2">
+          {#each spotlightQuote.quote.lines.slice(0, 3) as line, i (i)}
+            <div class="flex items-start gap-2.5">
+              <div
+                class="shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-white text-[11px] font-bold mt-0.5"
+                style="background-color: {colorFromString(line.said_by)};"
+              >
+                {line.said_by.charAt(0).toUpperCase()}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-[14px] font-medium text-surface-800 dark:text-surface-100 leading-snug wrap-break-word">"{line.text}"</p>
+                <p class="text-[10.5px] text-surface-400 dark:text-surface-500 font-medium mt-0.5">{line.said_by}</p>
               </div>
             </div>
+          {/each}
+        </div>
 
-            <!-- NSFW Toggle -->
-            <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-surface-700 dark:text-surface-300">
-              <input
-                type="checkbox"
-                bind:checked={isNsfw}
-                class="w-4 h-4 rounded text-brand-500 focus:ring-brand-500/40"
-              />
-              Mark as 🔞 NSFW
-            </label>
+        <div class="flex items-center gap-4 pt-3 border-t border-surface-100 dark:border-surface-800/70">
+          <div class="flex items-center gap-1 text-red-400">
+            <Heart size={14} fill="currentColor" />
+            <span class="text-[12.5px] font-bold text-surface-700 dark:text-surface-200">{spotlightQuote.favorites}</span>
           </div>
-
-          <div class="flex justify-end gap-2.5 pt-3">
-            <button
-              type="button"
-              onclick={() => { showAdd = false; }}
-              class="h-10 px-4 rounded-xl text-sm font-medium text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={addLoading || !content.trim() || !saidBy.trim()}
-              class="h-10 px-5 rounded-xl text-sm font-semibold text-brand-50 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 transition-colors"
-            >
-              {addLoading ? 'Saving…' : 'Save quote'}
-            </button>
+          <div class="flex items-center gap-1 text-surface-400">
+            <MessageCircle size={14} />
+            <span class="text-[12.5px] font-semibold text-surface-500 dark:text-surface-400">{spotlightQuote.comments}</span>
           </div>
-        </form>
-      </div>
+          {#if spotlightQuote.quote.adder?.first_name}
+            <span class="text-[11px] font-medium text-surface-400 dark:text-surface-500 ml-auto truncate">
+              Added by {spotlightQuote.quote.adder.first_name}
+            </span>
+          {/if}
+        </div>
+      </a>
     {/if}
 
-    <!-- Quotes Grid/Feed -->
-    {#if loading}
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-        {#each [1, 2, 3, 4] as _}
-          <div class="h-40 rounded-2xl bg-surface-100 dark:bg-surface-800/50 animate-pulse"></div>
-        {/each}
-      </div>
-
-    {:else if quotes.length === 0}
-      <div class="flex flex-col items-center justify-center py-20 text-center w-full">
-        <p class="text-lg font-bold text-surface-700 dark:text-surface-200 mb-1">No quotes in this room yet</p>
-        <p class="text-sm text-surface-400 dark:text-surface-500">Be the first to stash a memorable line!</p>
-      </div>
-
-    {:else}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-        {#each quotes as quote (quote.id)}
-          <div
-            class="relative flex flex-col justify-between p-6 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 shadow-sm hover:shadow-md transition-shadow w-full overflow-hidden"
-            style="border-left: 5px solid {quote.color || '#5B50F0'};"
-          >
-            <div>
-              <div class="flex items-start justify-between gap-2 mb-3">
-                <span class="text-2xl font-black opacity-30 leading-none" style="color: {quote.color}">”</span>
-                <div class="flex items-center gap-1.5">
-                  {#if quote.is_nsfw}
-                    <span class="px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold">NSFW</span>
-                  {/if}
-                  {#if quote.added_by === profile?.id || room?.owner_id === profile?.id}
-                    <button
-                      onclick={() => deleteQuote(quote.id)}
-                      class="text-surface-400 hover:text-red-500 text-sm px-1 transition-colors"
-                      title="Delete quote"
-                    >
-                      🗑️
-                    </button>
-                  {/if}
-                </div>
-              </div>
-
-              <!-- Content -->
-              <p class="text-base sm:text-lg font-medium text-surface-900 dark:text-surface-100 mb-4 whitespace-pre-wrap">
-                "{quote.content}"
+    <!-- Mini leaderboards -->
+    <div class="grid sm:grid-cols-3 gap-4 mt-4">
+      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 flex flex-col gap-3">
+        <div class="flex items-center gap-1.5 text-brand-500">
+          <Flame size={13} />
+          <span class="text-[11px] font-bold uppercase tracking-wide">Top quoter</span>
+        </div>
+        {#if topQuoter}
+          <div class="flex items-center gap-3">
+            <div
+              class="shrink-0 flex items-center justify-center w-10 h-10 rounded-2xl text-white text-[14px] font-bold shadow-sm"
+              style="background-color: {colorFromString(topQuoter.name)};"
+            >
+              {topQuoter.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="min-w-0">
+              <p class="text-[14px] font-bold text-surface-900 dark:text-surface-50 truncate">{topQuoter.name}</p>
+              <p class="text-[11px] text-surface-400 dark:text-surface-500 font-medium">
+                {topQuoter.count} {topQuoter.count === 1 ? 'quote' : 'quotes'} added
               </p>
             </div>
+          </div>
+        {:else}
+          <p class="text-[12.5px] text-surface-400">No data yet.</p>
+        {/if}
+      </div>
 
-            <div>
-              <!-- Author -->
-              <p class="text-sm font-bold text-surface-800 dark:text-surface-200">— {quote.said_by}</p>
-
-              <!-- Meta & Tags -->
-              <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-surface-100 dark:border-surface-800 text-xs text-surface-400 dark:text-surface-500">
-                <span>Added by <strong class="text-surface-600 dark:text-surface-400">{quote.adder?.first_name || 'Someone'}</strong></span>
-                
-                {#if quote.tags && quote.tags.length > 0}
-                  <div class="flex flex-wrap gap-1">
-                    {#each quote.tags as tag}
-                      <span class="px-2 py-0.5 rounded-md bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 font-mono">#{tag}</span>
-                    {/each}
-                  </div>
-                {/if}
-              </div>
+      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 flex flex-col gap-3">
+        <div class="flex items-center gap-1.5 text-amber-500">
+          <Crown size={13} />
+          <span class="text-[11px] font-bold uppercase tracking-wide">Most quoted</span>
+        </div>
+        {#if topQuoted}
+          <div class="flex items-center gap-3">
+            <div
+              class="shrink-0 flex items-center justify-center w-10 h-10 rounded-2xl text-white text-[14px] font-bold shadow-sm"
+              style="background-color: {colorFromString(topQuoted.name)};"
+            >
+              {topQuoted.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="min-w-0">
+              <p class="text-[14px] font-bold text-surface-900 dark:text-surface-50 truncate">{topQuoted.name}</p>
+              <p class="text-[11px] text-surface-400 dark:text-surface-500 font-medium">
+                {topQuoted.favorites} {topQuoted.favorites === 1 ? 'like' : 'likes'} earned
+              </p>
             </div>
           </div>
+        {:else}
+          <p class="text-[12.5px] text-surface-400">No data yet.</p>
+        {/if}
+      </div>
+
+      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 flex flex-col gap-3">
+        <div class="flex items-center gap-1.5 text-emerald-500">
+          <Brain size={13} />
+          <span class="text-[11px] font-bold uppercase tracking-wide">Quiz champ</span>
+        </div>
+        {#if quizChampion}
+          <div class="flex items-center gap-3">
+            <div
+              class="shrink-0 flex items-center justify-center w-10 h-10 rounded-2xl text-white text-[14px] font-bold shadow-sm"
+              style="background-color: {colorFromString(quizChampion.name)};"
+            >
+              {quizChampion.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="min-w-0">
+              <p class="text-[14px] font-bold text-surface-900 dark:text-surface-50 truncate">{quizChampion.name}</p>
+              <p class="text-[11px] text-surface-400 dark:text-surface-500 font-medium">
+                {quizChampion.accuracy.toFixed(0)}% accuracy · {quizChampion.played} played
+              </p>
+            </div>
+          </div>
+        {:else}
+          <p class="text-[12.5px] text-surface-400">No quizzes played yet.</p>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Fun facts + tag cloud -->
+    <div class="grid sm:grid-cols-2 gap-4 mt-4">
+      <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4">Fun facts</h2>
+        <div class="flex flex-col gap-3.5">
+          <div class="flex items-center gap-3">
+            <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-brand-500/10 text-brand-500">
+              <Ruler size={14} />
+            </div>
+            <p class="text-[12.5px] text-surface-600 dark:text-surface-300">
+              Longest quote has <span class="font-bold text-surface-900 dark:text-surface-50">{longestQuote ? quoteLength(longestQuote) : 0} characters</span>
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-red-500/10 text-red-500">
+              <EyeOff size={14} />
+            </div>
+            <p class="text-[12.5px] text-surface-600 dark:text-surface-300">
+              <span class="font-bold text-surface-900 dark:text-surface-50">{spiciestCount}</span> {spiciestCount === 1 ? 'quote is' : 'quotes are'} marked NSFW 🌶️
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500">
+              <Rows3 size={14} />
+            </div>
+            <p class="text-[12.5px] text-surface-600 dark:text-surface-300">
+              Average of <span class="font-bold text-surface-900 dark:text-surface-50">{avgLinesPerQuote.toFixed(1)} lines</span> per quote
+            </p>
+          </div>
+          {#if busiestWeekday}
+            <div class="flex items-center gap-3">
+              <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500">
+                <CalendarDays size={14} />
+              </div>
+              <p class="text-[12.5px] text-surface-600 dark:text-surface-300">
+                <span class="font-bold text-surface-900 dark:text-surface-50">{busiestWeekday.name}s</span> are the busiest, with {busiestWeekday.count} quotes total
+              </p>
+            </div>
+          {/if}
+          {#if firstQuoteDate}
+            <div class="flex items-center gap-3">
+              <div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-violet-500/10 text-violet-500">
+                <Zap size={14} />
+              </div>
+              <p class="text-[12.5px] text-surface-600 dark:text-surface-300">
+                This stash has been running for <span class="font-bold text-surface-900 dark:text-surface-50">{daysSinceStart} {daysSinceStart === 1 ? 'day' : 'days'}</span>
+              </p>
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4 flex items-center gap-1.5">
+          <Hash size={13} />
+          Popular tags
+        </h2>
+        {#if tagCloud.length === 0}
+          <div class="flex flex-col items-center justify-center py-8 text-center">
+            <p class="text-[12.5px] text-surface-400 dark:text-surface-500">No tags used yet.</p>
+          </div>
+        {:else}
+          <div class="flex flex-wrap gap-2 items-center">
+            {#each tagCloud as t (t.tag)}
+              {@const scale = 0.75 + (t.count / maxTagCount) * 0.6}
+              <span
+                class="font-bold px-2.5 py-1 rounded-xl transition-transform hover:scale-105"
+                style:color={colorFromString(t.tag)}
+                style:background-color={`${colorFromString(t.tag)}17`}
+                style:font-size={`${scale * 12.5}px`}
+              >
+                #{t.tag}
+                <span class="opacity-60 font-medium">· {t.count}</span>
+              </span>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="mt-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4">Recent activity</h2>
+      <div class="flex flex-col gap-1">
+        {#each [...quotes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5) as q (q.id)}
+          <a
+            href="/rooms/{roomId}/quotes/{q.id}"
+            class="flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors"
+          >
+            <div
+              class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl text-white text-[11px] font-bold"
+              style="background-color: {q.adder?.first_name ? colorFromString(q.adder.first_name) : colorFromString(q.id)};"
+            >
+              {(q.adder?.first_name ?? '?').charAt(0).toUpperCase()}
+            </div>
+            <p class="min-w-0 flex-1 text-[12.5px] text-surface-600 dark:text-surface-300 truncate">
+              <span class="font-semibold text-surface-800 dark:text-surface-100">{q.adder?.first_name ?? 'Someone'}</span>
+              added "{q.lines[0]?.text ?? ''}"
+            </p>
+            <span class="shrink-0 text-[10.5px] text-surface-400 dark:text-surface-500">
+              {new Date(q.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </span>
+          </a>
         {/each}
       </div>
-    {/if}
-
-  </main>
+    </div>
+  {/if}
 </div>

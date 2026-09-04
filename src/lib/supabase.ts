@@ -20,7 +20,6 @@ export async function getCurrentProfile() {
 
     if (!user) return null;
 
-    // 1. Haal profiel op
     const { data, error } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
 
     if (error) {
@@ -28,18 +27,14 @@ export async function getCurrentProfile() {
         return null;
     }
 
-    // 2. Self-healing: als het profiel ontbreekt, maak het direct aan
     if (!data) {
-        const firstName = user.user_metadata?.first_name || '';
-        
-        // Cast het object naar 'any' om de 'never[]' TypeScript check te omzeilen
         const { data: newProfile, error: createError } = await supabase
             .from('users')
-            .insert({ 
-                id: user.id, 
-                first_name: firstName,
-                email: user.email 
-            } as any)
+            .insert({
+                id: user.id,
+                first_name: user.user_metadata?.first_name || '',
+                email: user.email ?? ''
+            })
             .select()
             .single();
 
