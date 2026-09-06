@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabase';
   import QuoteCard from '$lib/components/QuoteCard.svelte';
+  import Avatar from '$lib/components/Avatar.svelte';
   import {
     ArrowLeft,
     Crown,
@@ -28,6 +29,7 @@
   let notFound = $state(false);
 
   let memberName = $state('');
+  let memberAvatarUrl = $state<string | null>(null);
   let ownerId = $state('');
   let currentUserId = $state('');
 
@@ -85,7 +87,7 @@
 
     const { data: memberRow, error: memberError } = await supabase
       .from('room_members')
-      .select('user_id, users(id, first_name)')
+      .select('user_id, users(id, first_name, avatar_url)')
       .eq('room_id', roomId)
       .eq('user_id', memberId)
       .maybeSingle();
@@ -98,11 +100,12 @@
 
     const u = Array.isArray(memberRow.users) ? memberRow.users[0] : memberRow.users;
     memberName = u!.first_name;
+    memberAvatarUrl = u!.avatar_url ?? null;
 
     // Quotes this member added
     const { data: quotesData, error: quotesError } = await supabase
       .from('quotes')
-      .select('*, adder:users!quotes_added_by_fkey(id, first_name)')
+      .select('*, adder:users!quotes_added_by_fkey(id, first_name, avatar_url)')
       .eq('room_id', roomId)
       .eq('added_by', memberId);
 
@@ -294,12 +297,7 @@
     <!-- Header -->
     <div class="flex items-start justify-between gap-4 mb-8">
       <div class="flex items-center gap-4 min-w-0">
-        <div
-            class="shrink-0 flex items-center justify-center rounded-3xl text-white text-[24px] font-bold shadow-sm"
-            style="width: 4rem; height: 4rem; background-color: {colorFromString(memberName)};"
-            >
-          {memberName.charAt(0).toUpperCase()}
-        </div>
+        <Avatar name={memberName} avatarUrl={memberAvatarUrl} size={64} class="rounded-3xl! text-[24px]" />
         <div class="min-w-0">
           <div class="flex items-center gap-2 min-w-0">
             <h1 class="text-xl font-bold text-surface-900 dark:text-surface-50 truncate">{memberName}</h1>

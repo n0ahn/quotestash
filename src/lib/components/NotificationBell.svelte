@@ -75,7 +75,7 @@
 
     const { data, error } = await supabase
       .from('notifications')
-      .select('*, actor:users!notifications_actor_id_fkey(id, first_name)')
+      .select('*, actor:users!notifications_actor_id_fkey(id, first_name, avatar_url)')
       .order('created_at', { ascending: false })
       .limit(30);
 
@@ -150,12 +150,12 @@
           filter: `user_id=eq.${currentUserId}`
         },
         async (payload) => {
-          let actorData: { id: string; first_name: string } | null = null;
+          let actorData: { id: string; first_name: string; avatar_url: string | null } | null = null;
 
           if (payload.new.actor_id) {
             const { data } = await supabase
               .from('users')
-              .select('id, first_name')
+              .select('id, first_name, avatar_url')
               .eq('id', payload.new.actor_id)
               .maybeSingle();
             actorData = data;

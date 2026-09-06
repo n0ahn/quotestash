@@ -2,10 +2,12 @@
   import { supabase } from '$lib/supabase';
   import { page } from '$app/state';
   import { X, Plus, Trash2 } from 'lucide-svelte';
+  import Avatar from './Avatar.svelte';
 
   type Member = {
     id: string;
     first_name: string;
+    avatar_url: string | null;
   };
 
   let {
@@ -367,15 +369,7 @@
                                    dark:hover:text-surface-50
                                    transition-colors"
                           >
-                            <div
-                              class="w-5 h-5 rounded-full
-                                     flex items-center justify-center
-                                     text-[10px] font-bold
-                                     text-white shrink-0"
-                              style:background-color={colorFromString(member.first_name)}
-                            >
-                              {member.first_name.charAt(0).toUpperCase()}
-                            </div>
+                            <Avatar name={member.first_name} avatarUrl={member.avatar_url} size={20} />
 
                             <span>{member.first_name}</span>
                           </button>

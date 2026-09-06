@@ -1,12 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { supabase, getCurrentProfile } from '$lib/supabase';
-  import { Quote, Heart, MessageCircle, Sparkles, Star, LayoutGrid, Brain, Target, Trophy } from 'lucide-svelte';
+  import { supabase, getCurrentProfile, uploadAvatar, removeAvatar } from '$lib/supabase';
+  import { Quote, Heart, MessageCircle, Sparkles, Star, LayoutGrid, Brain, Target, Trophy, Camera, Loader2, X } from 'lucide-svelte';
   import { summarizeQuizResults, QUIZ_MODE_LABELS, type QuizStats } from '$lib/database.types';
 
   let loading = $state(true);
   let notFound = $state(false);
+
+  let avatarUrl = $state<string | null>(null);
+  let avatarUploading = $state(false);
+  let avatarError = $state<string | null>(null);
+  let fileInput = $state<HTMLInputElement>();
 
   let userId = $state('');
   let firstName = $state('');
@@ -57,6 +62,7 @@
     userId = profile.id;
     firstName = profile.first_name;
     email = profile.email;
+    avatarUrl = profile.avatar_url ?? null;
 
     // Rooms this user belongs to
     const { data: memberRows, error: memberError } = await supabase
@@ -187,6 +193,54 @@
     loading = false;
   }
 
+  const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+  async function handleAvatarChange(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    avatarError = null;
+
+    if (!file.type.startsWith('image/')) {
+      avatarError = 'Please choose an image file.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_BYTES) {
+      avatarError = 'Image must be smaller than 5MB.';
+      input.value = '';
+      return;
+    }
+
+    avatarUploading = true;
+    const newUrl = await uploadAvatar(file);
+    avatarUploading = false;
+    input.value = '';
+
+    if (!newUrl) {
+      avatarError = 'Failed to upload image. Please try again.';
+      return;
+    }
+
+    avatarUrl = newUrl;
+  }
+
+  async function handleRemoveAvatar() {
+    avatarError = null;
+    avatarUploading = true;
+    const ok = await removeAvatar();
+    avatarUploading = false;
+
+    if (!ok) {
+      avatarError = 'Failed to remove picture. Please try again.';
+      return;
+    }
+
+    avatarUrl = null;
+  }
+
   onMount(loadData);
 </script>
 
@@ -219,17 +273,73 @@
   {:else}
     <!-- Header -->
     <div class="flex items-center gap-4 mb-8 min-w-0">
-      <div
-        class="shrink-0 flex items-center justify-center rounded-full text-white text-[24px] font-bold shadow-sm"
-        style="width: 4rem; height: 4rem; background-color: {colorFromString(firstName)};"
-      >
-        {firstName.charAt(0).toUpperCase()}
+      <div class="relative shrink-0 group/avatar">
+        {#if avatarUrl}
+          <img
+            src={avatarUrl}
+            alt={firstName}
+            class="w-16 h-16 rounded-full object-cover shadow-sm"
+          />
+        {:else}
+          <div
+            class="flex items-center justify-center rounded-full text-white text-[24px] font-bold shadow-sm"
+            style="width: 4rem; height: 4rem; background-color: {colorFromString(firstName)};"
+          >
+            {firstName.charAt(0).toUpperCase()}
+          </div>
+        {/if}
+
+        <button
+          type="button"
+          onclick={() => fileInput?.click()}
+          disabled={avatarUploading}
+          aria-label="Change profile picture"
+          class="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover/avatar:bg-black/40 text-white opacity-0 group-hover/avatar:opacity-100 transition-all disabled:cursor-wait"
+        >
+          {#if avatarUploading}
+            <Loader2 size={18} class="animate-spin" />
+          {:else}
+            <Camera size={18} />
+          {/if}
+        </button>
+
+        <input
+          bind:this={fileInput}
+          type="file"
+          accept="image/*"
+          class="hidden"
+          onchange={handleAvatarChange}
+        />
       </div>
-      <div class="min-w-0">
+      <div class="min-w-0 flex-1">
         <h1 class="text-xl font-bold text-surface-900 dark:text-surface-50 truncate">{firstName}</h1>
         <p class="text-[13px] text-surface-500 dark:text-surface-400 mt-0.5 truncate">
           {email} · in {roomCount} {roomCount === 1 ? 'room' : 'rooms'}
         </p>
+        <div class="flex items-center gap-3 mt-1.5">
+          <button
+            type="button"
+            onclick={() => fileInput?.click()}
+            disabled={avatarUploading}
+            class="text-[11.5px] font-semibold text-brand-500 hover:text-brand-600 transition-colors disabled:opacity-50"
+          >
+            {avatarUrl ? 'Change picture' : 'Add picture'}
+          </button>
+          {#if avatarUrl}
+            <button
+              type="button"
+              onclick={handleRemoveAvatar}
+              disabled={avatarUploading}
+              class="flex items-center gap-1 text-[11.5px] font-medium text-surface-400 hover:text-red-500 transition-colors disabled:opacity-50"
+            >
+              <X size={12} />
+              Remove
+            </button>
+          {/if}
+        </div>
+        {#if avatarError}
+          <p class="text-[11.5px] text-red-500 mt-1">{avatarError}</p>
+        {/if}
       </div>
     </div>
 

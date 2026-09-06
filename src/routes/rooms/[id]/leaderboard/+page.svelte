@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { supabase } from '$lib/supabase';
+  import Avatar from '$lib/components/Avatar.svelte';
   import {
     Trophy,
     Heart,
@@ -59,6 +60,7 @@
   let commentCounts = $state<Record<string, number>>({});
   let quizRows = $state<{ user_id: string; correct_count: number; total_count: number }[]>([]);
   let memberNames = $state<Record<string, string>>({});
+  let memberAvatars = $state<Record<string, string | null>>({});
 
   const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
     { id: 'quotes', label: 'Top quotes', icon: Quote },
@@ -81,7 +83,7 @@
 
     const { data: quotesData } = await supabase
       .from('quotes')
-      .select('*, adder:users!quotes_added_by_fkey(id, first_name)')
+      .select('*, adder:users!quotes_added_by_fkey(id, first_name, avatar_url)')
       .eq('room_id', roomId);
 
     quotes = ((quotesData ?? []) as any[]).map((q) => ({
@@ -120,17 +122,22 @@
 
     const { data: membersData, error: membersError } = await supabase
       .from('room_members')
-      .select('user_id, users(id, first_name)')
+      .select('user_id, users(id, first_name, avatar_url)')
       .eq('room_id', roomId);
 
     if (membersError) console.error('members load error', membersError);
 
     const names: Record<string, string> = {};
+    const avatars: Record<string, string | null> = {};
     for (const m of (membersData ?? []) as any[]) {
       const u = Array.isArray(m.users) ? m.users[0] : m.users;
-      if (u) names[u.id] = u.first_name;
+      if (u) {
+        names[u.id] = u.first_name;
+        avatars[u.id] = u.avatar_url ?? null;
+      }
     }
     memberNames = names;
+    memberAvatars = avatars;
 
     const { data: quizData, error: quizError } = await supabase
       .from('quiz_results')
@@ -236,6 +243,7 @@
   type QuoterStat = {
     id: string;
     name: string;
+    avatar_url: string | null;
     quoteCount: number;
     totalFavoritesEarned: number;
     totalCommentsEarned: number;
@@ -256,6 +264,7 @@
         map.set(id, {
           id,
           name: q.adder.first_name,
+          avatar_url: q.adder.avatar_url ?? null,
           quoteCount: 0,
           totalFavoritesEarned: 0,
           totalCommentsEarned: 0,
@@ -292,6 +301,7 @@
   type QuizStat = {
     id: string;
     name: string;
+    avatar_url: string | null;
     quizzesPlayed: number;
     totalCorrect: number;
     totalQuestions: number;
@@ -309,6 +319,7 @@
         map.set(row.user_id, {
           id: row.user_id,
           name,
+          avatar_url: memberAvatars[row.user_id] ?? null,
           quizzesPlayed: 0,
           totalCorrect: 0,
           totalQuestions: 0,
@@ -598,12 +609,7 @@
                   <span class="text-[13px] font-bold text-surface-300 dark:text-surface-600">#{i + 1}</span>
                 {/if}
               </div>
-              <div
-                class="shrink-0 flex items-center justify-center w-10 h-10 rounded-2xl text-white text-[14px] font-bold shadow-sm"
-                style="background-color: {colorFromString(quizzer.name)};"
-              >
-                {quizzer.name.charAt(0).toUpperCase()}
-              </div>
+              <Avatar name={quizzer.name} avatarUrl={quizzer.avatar_url} size={40} class="rounded-2xl! text-[14px]" />
               <div class="min-w-0 flex-1">
                 <p class="text-[14px] font-bold text-surface-900 dark:text-surface-50 truncate">{quizzer.name}</p>
                 <p class="text-[11px] text-surface-400 dark:text-surface-500 font-medium truncate">
@@ -667,12 +673,7 @@
                   <span class="text-[13px] font-bold text-surface-300 dark:text-surface-600">#{i + 1}</span>
                 {/if}
               </div>
-              <div
-                class="shrink-0 flex items-center justify-center w-10 h-10 rounded-2xl text-white text-[14px] font-bold shadow-sm"
-                style="background-color: {colorFromString(quoter.name)};"
-              >
-                {quoter.name.charAt(0).toUpperCase()}
-              </div>
+              <Avatar name={quoter.name} avatarUrl={quoter.avatar_url} size={40} class="rounded-2xl! text-[14px]" />
               <div class="min-w-0 flex-1">
                 <p class="text-[14px] font-bold text-surface-900 dark:text-surface-50 truncate">{quoter.name}</p>
                 <p class="text-[11px] text-surface-400 dark:text-surface-500 font-medium truncate">{quoter.peopleQuoted.size} {quoter.peopleQuoted.size === 1 ? 'person' : 'people'} quoted</p>

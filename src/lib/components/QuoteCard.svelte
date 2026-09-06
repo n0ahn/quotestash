@@ -2,6 +2,7 @@
   import { Heart, EyeOff, Trash2, X, MessageCircle } from 'lucide-svelte';
   import { page } from '$app/state';
   import type { QuoteWithDetails } from '$lib/database.types';
+  import Avatar from './Avatar.svelte';
 
   let {
     quote,
@@ -145,12 +146,7 @@
   <div class="relative z-10 flex items-center justify-between pointer-events-none pt-1 mt-auto border-t border-black/[0.05] dark:border-white/[0.08]">
     {#if quote.adder?.first_name}
       <div class="flex items-center gap-1.5 min-w-0 pt-2.5" title={`Quoted by ${quote.adder.first_name}`}>
-        <div
-          class="shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-white text-[9px] font-bold ring-2 ring-white/70 dark:ring-surface-900/70"
-          style="background-color: {colorFromString(quote.adder.first_name)};"
-        >
-          {quote.adder.first_name.charAt(0).toUpperCase()}
-        </div>
+        <Avatar name={quote.adder.first_name} avatarUrl={quote.adder.avatar_url} size={20} ring />
         <span class="text-[11px] font-medium text-surface-400 dark:text-surface-500 truncate">
           Quoted by <span class="text-surface-500 dark:text-surface-400">{quote.adder.first_name}</span>
         </span>

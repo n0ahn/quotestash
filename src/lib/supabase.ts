@@ -48,3 +48,64 @@ export async function getCurrentProfile() {
 
     return data;
 }
+
+/**
+ * Uploads a new profile picture to the `avatars` storage bucket and updates
+ * the user's `avatar_url` in the `users` table. Returns the new public URL,
+ * or null on failure.
+ */
+export async function uploadAvatar(file: File): Promise<string | null> {
+    const {
+        data: { user }
+    } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, cacheControl: '3600' });
+
+    if (uploadError) {
+        console.error('Failed to upload avatar', uploadError);
+        return null;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    // Bust caches (e.g. when re-uploading to the same path) with a version query param.
+    const avatarUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+
+    const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id);
+
+    if (updateError) {
+        console.error('Failed to save avatar url', updateError);
+        return null;
+    }
+
+    return avatarUrl;
+}
+
+/**
+ * Removes the current user's profile picture.
+ */
+export async function removeAvatar(): Promise<boolean> {
+    const {
+        data: { user }
+    } = await supabase.auth.getUser();
+
+    if (!user) return false;
+
+    const { error } = await supabase.from('users').update({ avatar_url: null }).eq('id', user.id);
+
+    if (error) {
+        console.error('Failed to remove avatar', error);
+        return false;
+    }
+
+    return true;
+}

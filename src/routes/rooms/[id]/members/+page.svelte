@@ -3,12 +3,14 @@
   import { page } from '$app/state';
   import { supabase } from '$lib/supabase';
   import { Users, Crown, UserMinus, Search, X } from 'lucide-svelte';
+  import Avatar from '$lib/components/Avatar.svelte';
 
   const roomId = $derived(page.params.id!);
 
   type Member = {
     id: string;
     first_name: string;
+    avatar_url: string | null;
     quoteCount: number;
     favoritesEarned: number;
   };
@@ -38,15 +40,6 @@
     return result;
   });
 
-  function colorFromString(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 70%, 60%)`;
-  }
-
   async function loadData() {
     loading = true;
 
@@ -59,7 +52,7 @@
 
     const { data: membersData, error: membersError } = await supabase
       .from('room_members')
-      .select('user_id, users(id, first_name)')
+      .select('user_id, users(id, first_name, avatar_url)')
       .eq('room_id', roomId);
 
     if (membersError) {
@@ -72,7 +65,7 @@
       .filter((m: any) => m.users)
       .map((m: any) => {
         const u = Array.isArray(m.users) ? m.users[0] : m.users;
-        return { id: u!.id as string, first_name: u!.first_name as string };
+        return { id: u!.id as string, first_name: u!.first_name as string, avatar_url: (u!.avatar_url as string | null) ?? null };
       });
 
     const { data: quotesData, error: quotesError } = await supabase
@@ -186,12 +179,7 @@
             href="/rooms/{roomId}/members/{member.id}"
             class="flex items-center gap-3 flex-1 min-w-0"
           >
-            <div
-              class="shrink-0 flex items-center justify-center w-11 h-11 rounded-2xl text-white text-[15px] font-bold shadow-sm"
-              style="background-color: {colorFromString(member.first_name)};"
-            >
-              {member.first_name.charAt(0).toUpperCase()}
-            </div>
+            <Avatar name={member.first_name} avatarUrl={member.avatar_url} size={44} class="rounded-2xl! text-[15px]" />
 
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5 min-w-0">

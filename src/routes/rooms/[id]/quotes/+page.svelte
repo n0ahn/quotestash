@@ -12,7 +12,7 @@
 
   const roomId = $derived(page.params.id!);
 
-  type Member = { id: string; first_name: string };
+  type Member = { id: string; first_name: string; avatar_url: string | null };
 
   let quotes = $state<QuoteWithDetails[]>([]);
   let members = $state<Member[]>([]);
@@ -93,7 +93,7 @@
 
     const { data: quotesData, error: quotesError } = await supabase
       .from('quotes')
-      .select('*, adder:users!quotes_added_by_fkey(id, first_name)')
+      .select('*, adder:users!quotes_added_by_fkey(id, first_name, avatar_url)')
       .eq('room_id', roomId);
 
     if (quotesError) console.error('quotes load error', quotesError);
@@ -104,7 +104,7 @@
 
     const { data: membersData, error: membersError } = await supabase
       .from('room_members')
-      .select('user_id, users(id, first_name)')
+      .select('user_id, users(id, first_name, avatar_url)')
       .eq('room_id', roomId);
 
     if (membersError) {
@@ -116,7 +116,8 @@
           const userObj = Array.isArray(m.users) ? m.users[0] : m.users;
           return {
             id: userObj!.id,
-            first_name: userObj!.first_name
+            first_name: userObj!.first_name,
+            avatar_url: userObj!.avatar_url ?? null
           };
         });
     }
@@ -181,7 +182,7 @@
   async function fetchAndUpsertQuote(id: string) {
     const { data, error } = await supabase
       .from('quotes')
-      .select('*, adder:users!quotes_added_by_fkey(id, first_name)')
+      .select('*, adder:users!quotes_added_by_fkey(id, first_name, avatar_url)')
       .eq('id', id)
       .maybeSingle();
 

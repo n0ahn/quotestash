@@ -6,6 +6,7 @@
   import { Heart, AlertTriangle, Trash2, ArrowLeft, X, MessageCircle, Send, CornerDownRight, SmilePlus } from 'lucide-svelte';
   import type { QuoteWithDetails, CommentWithDetails } from '$lib/database.types';
   import type { RealtimeChannel } from '@supabase/supabase-js';
+  import Avatar from '$lib/components/Avatar.svelte';
 
   const roomId = $derived(page.params.id!);
   const quoteId = $derived(page.params.quoteId!);
@@ -17,7 +18,7 @@
   let isRoomOwner = $state(false);
   let favoriteCount = $state(0);
   let isFavorited = $state(false);
-  let favoriteUsers = $state<{ user_id: string; first_name: string }[]>([]);
+  let favoriteUsers = $state<{ user_id: string; first_name: string; avatar_url: string | null }[]>([]);
   let showFavoritesList = $state(false);
   let isQuoteOwner = $state(false);
 
@@ -35,8 +36,8 @@
 
   // Emoji reactions state — grouped by emoji, with count + whether I reacted
   const QUICK_REACTIONS = ['😂', '🔥', '💀', '❤️', '😭', '👀'];
-  type ReactionGroup = { emoji: string; count: number; reactedByMe: boolean; users: { user_id: string; first_name: string }[] };
-  type ReactionRow = { id: string; emoji: string; user_id: string; first_name: string };
+  type ReactionGroup = { emoji: string; count: number; reactedByMe: boolean; users: { user_id: string; first_name: string; avatar_url: string | null }[] };
+  type ReactionRow = { id: string; emoji: string; user_id: string; first_name: string; avatar_url: string | null };
   let reactionRows = $state<ReactionRow[]>([]);
   let reactionPickerOpen = $state(false);
   let openReactionGroup = $state<string | null>(null);
@@ -58,13 +59,13 @@
 
   // Groepeert de losse reactie-rijen per emoji voor weergave
   const reactionGroups = $derived.by((): ReactionGroup[] => {
-    const byEmoji = new Map<string, { count: number; reactedByMe: boolean; users: { user_id: string; first_name: string }[] }>();
+    const byEmoji = new Map<string, { count: number; reactedByMe: boolean; users: { user_id: string; first_name: string; avatar_url: string | null }[] }>();
 
     for (const r of reactionRows) {
       const existing = byEmoji.get(r.emoji) ?? { count: 0, reactedByMe: false, users: [] };
       existing.count += 1;
       if (r.user_id === currentUserId) existing.reactedByMe = true;
-      existing.users.push({ user_id: r.user_id, first_name: r.first_name });
+      existing.users.push({ user_id: r.user_id, first_name: r.first_name, avatar_url: r.avatar_url });
       byEmoji.set(r.emoji, existing);
     }
 
@@ -114,7 +115,7 @@
 
     const { data, error } = await supabase
       .from('quotes')
-      .select('*, adder:users!quotes_added_by_fkey(id, first_name)')
+      .select('*, adder:users!quotes_added_by_fkey(id, first_name, avatar_url)')
       .eq('id', quoteId)
       .single();
 
@@ -132,14 +133,18 @@
 
     const { data: favData } = await supabase
       .from('quote_favorites')
-      .select('user_id, users(id, first_name)')
+      .select('user_id, users(id, first_name, avatar_url)')
       .eq('quote_id', quoteId);
 
     favoriteCount = favData?.length ?? 0;
     isFavorited = (favData ?? []).some((f) => f.user_id === user.id);
     favoriteUsers = ((favData ?? []) as any[]).map((f) => {
       const u = Array.isArray(f.users) ? f.users[0] : f.users;
-      return { user_id: f.user_id as string, first_name: (u?.first_name as string) ?? 'Someone' };
+      return {
+        user_id: f.user_id as string,
+        first_name: (u?.first_name as string) ?? 'Someone',
+        avatar_url: (u?.avatar_url as string | null) ?? null
+      };
     });
 
     loading = false;
@@ -168,7 +173,7 @@
 
     const { data, error } = await supabase
       .from('quote_comments')
-      .select('*, author:users!quote_comments_user_id_fkey(id, first_name)')
+      .select('*, author:users!quote_comments_user_id_fkey(id, first_name, avatar_url)')
       .eq('quote_id', quoteId)
       .order('created_at', { ascending: true });
 
@@ -201,7 +206,7 @@
   async function loadReactions() {
     const { data, error } = await supabase
       .from('quote_reactions')
-      .select('id, emoji, user_id, users(id, first_name)')
+      .select('id, emoji, user_id, users(id, first_name, avatar_url)')
       .eq('quote_id', quoteId);
 
     if (error) {
@@ -211,7 +216,13 @@
 
     reactionRows = ((data ?? []) as any[]).map((r): ReactionRow => {
       const u = Array.isArray(r.users) ? r.users[0] : r.users;
-      return { id: r.id, emoji: r.emoji, user_id: r.user_id, first_name: (u?.first_name as string) ?? 'Someone' };
+      return {
+        id: r.id,
+        emoji: r.emoji,
+        user_id: r.user_id,
+        first_name: (u?.first_name as string) ?? 'Someone',
+        avatar_url: (u?.avatar_url as string | null) ?? null
+      };
     });
   }
 
@@ -223,7 +234,7 @@
   async function fetchAndInsertComment(id: string) {
     const { data, error } = await supabase
       .from('quote_comments')
-      .select('*, author:users!quote_comments_user_id_fkey(id, first_name)')
+      .select('*, author:users!quote_comments_user_id_fkey(id, first_name, avatar_url)')
       .eq('id', id)
       .maybeSingle();
 
@@ -313,8 +324,8 @@
           const row = payload.new as any;
           if (row.user_id === currentUserId) return;
           favoriteCount += 1;
-          const { data: u } = await supabase.from('users').select('id, first_name').eq('id', row.user_id).maybeSingle();
-          favoriteUsers = [...favoriteUsers, { user_id: row.user_id, first_name: u?.first_name ?? 'Someone' }];
+          const { data: u } = await supabase.from('users').select('id, first_name, avatar_url').eq('id', row.user_id).maybeSingle();
+          favoriteUsers = [...favoriteUsers, { user_id: row.user_id, first_name: u?.first_name ?? 'Someone', avatar_url: u?.avatar_url ?? null }];
         }
       )
       .on(
@@ -418,7 +429,7 @@
     const { data, error } = await supabase
       .from('quote_comments')
       .insert({ quote_id: quote.id, user_id: currentUserId, text })
-      .select('*, author:users!quote_comments_user_id_fkey(id, first_name)')
+      .select('*, author:users!quote_comments_user_id_fkey(id, first_name, avatar_url)')
       .single();
 
     submittingComment = false;
@@ -467,7 +478,7 @@
         reply_to_name: replyingToName,
         text
       })
-      .select('*, author:users!quote_comments_user_id_fkey(id, first_name)')
+      .select('*, author:users!quote_comments_user_id_fkey(id, first_name, avatar_url)')
       .single();
 
     submittingReply = false;
@@ -672,12 +683,7 @@
                   <div class="flex flex-col gap-0.5">
                     {#each group.users as u (u.user_id)}
                       <div class="flex items-center gap-2 px-2 py-1.5 rounded-xl">
-                        <div
-                          class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-bold"
-                          style="background-color: {colorFromString(u.first_name)};"
-                        >
-                          {u.first_name.charAt(0).toUpperCase()}
-                        </div>
+                        <Avatar name={u.first_name} avatarUrl={u.avatar_url} size={24} />
                         <span class="text-[12.5px] text-surface-700 dark:text-surface-200 truncate">
                           {u.user_id === currentUserId ? 'You' : u.first_name}
                         </span>
@@ -719,12 +725,7 @@
         <div class="flex items-center justify-between pt-3 border-t border-surface-100 dark:border-surface-800">
           <div class="flex items-center gap-2 min-w-0">
             {#if quote.adder?.first_name}
-              <div
-                class="shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-white text-[9px] font-bold ring-2 ring-white dark:ring-surface-900"
-                style="background-color: {colorFromString(quote.adder.first_name)};"
-              >
-                {quote.adder.first_name.charAt(0).toUpperCase()}
-              </div>
+              <Avatar name={quote.adder.first_name} avatarUrl={quote.adder.avatar_url} size={20} ring />
               <p class="text-[11px] text-surface-400 dark:text-surface-500 truncate">
                 Quoted by <span class="font-semibold text-surface-500 dark:text-surface-400">{quote.adder.first_name}</span>
                 · {new Date(quote.created_at).toLocaleDateString()}
@@ -770,12 +771,7 @@
                   <div class="flex flex-col gap-0.5">
                     {#each favoriteUsers as f (f.user_id)}
                       <div class="flex items-center gap-2 px-2 py-1.5 rounded-xl">
-                        <div
-                          class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-bold"
-                          style="background-color: {colorFromString(f.first_name)};"
-                        >
-                          {f.first_name.charAt(0).toUpperCase()}
-                        </div>
+                        <Avatar name={f.first_name} avatarUrl={f.avatar_url} size={24} />
                         <span class="text-[12.5px] text-surface-700 dark:text-surface-200 truncate">
                           {f.user_id === currentUserId ? 'You' : f.first_name}
                         </span>
@@ -847,12 +843,7 @@
             <div class="flex flex-col gap-2 p-3.5 rounded-2xl glass">
               <!-- Top-level comment -->
               <div class="flex items-start gap-2.5">
-                <div
-                  class="shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-white text-[10px] font-bold ring-2 ring-white dark:ring-surface-900"
-                  style="background-color: {colorFromString(comment.author?.first_name ?? comment.user_id)};"
-                >
-                  {(comment.author?.first_name ?? '?').charAt(0).toUpperCase()}
-                </div>
+                <Avatar name={comment.author?.first_name ?? '?'} avatarUrl={comment.author?.avatar_url} size={28} ring />
 
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 flex-wrap">
@@ -908,12 +899,7 @@
                 <div class="flex flex-col gap-2 pl-4 ml-3.5 border-l-2 border-surface-100 dark:border-surface-800">
                   {#each comment.replies as reply (reply.id)}
                     <div class="flex items-start gap-2">
-                      <div
-                        class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-white text-[9px] font-bold ring-2 ring-white dark:ring-surface-900"
-                        style="background-color: {colorFromString(reply.author?.first_name ?? reply.user_id)};"
-                      >
-                        {(reply.author?.first_name ?? '?').charAt(0).toUpperCase()}
-                      </div>
+                      <Avatar name={reply.author?.first_name ?? '?'} avatarUrl={reply.author?.avatar_url} size={24} ring />
 
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-1.5 flex-wrap">

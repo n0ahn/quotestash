@@ -24,7 +24,7 @@
 
   const roomId = $derived(page.params.id!);
 
-  type Member = { id: string; first_name: string };
+  type Member = { id: string; first_name: string; avatar_url: string | null };
   type PoolEntry = { text: string; memberId: string; memberName: string };
 
   type WhoQuestion = {
@@ -123,7 +123,7 @@
 
     const { data: membersData, error: membersError } = await supabase
       .from('room_members')
-      .select('user_id, users(id, first_name)')
+      .select('user_id, users(id, first_name, avatar_url)')
       .eq('room_id', roomId);
 
     if (membersError) console.error('members load error', membersError);
@@ -132,7 +132,7 @@
       .filter((m: any) => m.users)
       .map((m: any) => {
         const u = Array.isArray(m.users) ? m.users[0] : m.users;
-        return { id: u!.id as string, first_name: u!.first_name as string };
+        return { id: u!.id as string, first_name: u!.first_name as string, avatar_url: (u!.avatar_url as string | null) ?? null };
       });
 
     const { data: quotesData, error: quotesError } = await supabase

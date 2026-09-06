@@ -3,14 +3,17 @@
   import { supabase, getCurrentProfile } from '$lib/supabase';
   import { onMount } from 'svelte';
   import { User, Settings, LayoutGrid, LogOut, ChevronDown } from 'lucide-svelte';
+  import Avatar from './Avatar.svelte';
 
   let open = $state(false);
   let firstName = $state('');
+  let avatarUrl = $state<string | null>(null);
   let menuEl = $state<HTMLDivElement>();
 
   onMount(async () => {
     const profile = await getCurrentProfile();
     firstName = profile?.first_name ?? '';
+    avatarUrl = profile?.avatar_url ?? null;
   });
 
   function handleClickOutside(e: MouseEvent) {
@@ -30,17 +33,16 @@
     onclick={() => (open = !open)}
     class="glass-chrome flex items-center gap-2 h-9 pl-1.5 pr-2.5 rounded-full hover:bg-white/90 dark:hover:bg-surface-800/70 transition-all"
   >
-    <div class="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center text-white text-[11px] font-bold shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset]">
-      {firstName ? firstName.charAt(0).toUpperCase() : '·'}
-    </div>
+    <Avatar name={firstName} {avatarUrl} size={24} />
     <ChevronDown size={13} class="text-surface-400" />
   </button>
 
   {#if open}
     <div class="glass-chrome absolute right-0 mt-2 w-52 rounded-2xl overflow-hidden">
       {#if firstName}
-        <div class="px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.08]">
-          <p class="text-[13px] font-semibold text-surface-900 dark:text-surface-50">{firstName}</p>
+        <div class="px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.08] flex items-center gap-2.5">
+          <Avatar name={firstName} {avatarUrl} size={28} />
+          <p class="text-[13px] font-semibold text-surface-900 dark:text-surface-50 truncate">{firstName}</p>
         </div>
       {/if}
 

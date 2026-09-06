@@ -19,16 +19,19 @@ export interface Database {
           id: string;
           first_name: string;
           email: string;
+          avatar_url: string | null;
         };
         Insert: {
           id: string;
           first_name: string;
           email: string;
+          avatar_url?: string | null;
         };
         Update: {
           id?: string;
           first_name?: string;
           email?: string;
+          avatar_url?: string | null;
         };
         Relationships: [];
       };
@@ -483,6 +486,7 @@ export type QuoteWithDetails =
     adder?: {
       id: string;
       first_name: string;
+      avatar_url: string | null;
     } | null;
     comment_count?: number;
   };
@@ -492,6 +496,7 @@ export type CommentWithDetails =
     author?: {
       id: string;
       first_name: string;
+      avatar_url: string | null;
     } | null;
     like_count: number;
     is_liked: boolean;
@@ -508,6 +513,7 @@ export type NotificationWithDetails =
     actor?: {
       id: string;
       first_name: string;
+      avatar_url: string | null;
     } | null;
     room?: {
       id: string;
