@@ -3,7 +3,7 @@
 @theme {
 	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-	/* Brand */
+	/* Brand — verdiept paars */
 	--color-brand-50: #f5f4fe;
 	--color-brand-100: #ecebfd;
 	--color-brand-200: #d9d5fb;
@@ -15,18 +15,30 @@
 	--color-brand-800: #2f2988;
 	--color-brand-900: #26216d;
 
-	/* Neutrals used for the strak/minimalistisch premium surfaces */
+	/* Accent — amber/goud, voor glow & gradients */
+	--color-accent-50: #fffbeb;
+	--color-accent-100: #fef3c7;
+	--color-accent-200: #fde68a;
+	--color-accent-300: #fcd34d;
+	--color-accent-400: #fbbf24;
+	--color-accent-500: #f59e0b;
+	--color-accent-600: #d97706;
+	--color-accent-700: #b45309;
+	--color-accent-800: #92400e;
+	--color-accent-900: #78350f;
+
+	/* Neutrals — surfaces, met wat meer koelte voor glass */
 	--color-surface-50: #fafafa;
-    --color-surface-100: #f4f4f5;
-    --color-surface-200: #e4e4e7;
-    --color-surface-300: #d4d4d8;
-    --color-surface-400: #a1a1aa;
-    --color-surface-500: #71717a;
-    --color-surface-600: #52525b;
-    --color-surface-700: #3f3f46;
-    --color-surface-800: #27272a;
-    --color-surface-900: #18181b;
-    --color-surface-950: #09090b;
+	--color-surface-100: #f4f4f5;
+	--color-surface-200: #e4e4e7;
+	--color-surface-300: #d4d4d8;
+	--color-surface-400: #a1a1aa;
+	--color-surface-500: #71717a;
+	--color-surface-600: #52525b;
+	--color-surface-700: #3f3f46;
+	--color-surface-800: #27272a;
+	--color-surface-900: #18181b;
+	--color-surface-950: #09090b;
 }
 
 /* Manual dark mode: toggled via the .dark class on <html> (see +layout.svelte) */
@@ -50,6 +62,106 @@ body {
 	font-feature-settings:
 		'ss01' on,
 		'cv01' on;
+}
+
+/* ---------------------------------------------------------------- */
+/* Ambient background — gradient blobs die achter het glas doorschemeren */
+/* ---------------------------------------------------------------- */
+
+.app-ambient {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.app-ambient::before,
+.app-ambient::after,
+.app-ambient .blob-3 {
+	content: '';
+	position: absolute;
+	border-radius: 9999px;
+	filter: blur(90px);
+	opacity: 0.35;
+}
+
+.app-ambient::before {
+	top: -10%;
+	left: -8%;
+	width: 42vw;
+	height: 42vw;
+	background: radial-gradient(circle, var(--color-brand-500), transparent 70%);
+}
+
+.app-ambient::after {
+	bottom: -15%;
+	right: -10%;
+	width: 46vw;
+	height: 46vw;
+	background: radial-gradient(circle, var(--color-accent-500), transparent 70%);
+	opacity: 0.28;
+}
+
+.dark .app-ambient::before,
+.dark .app-ambient::after {
+	opacity: 0.4;
+}
+
+/* ---------------------------------------------------------------- */
+/* Glass utilities — herbruikbaar op panels, modals, cards, dropdowns */
+/* ---------------------------------------------------------------- */
+
+.glass {
+	@apply border border-white/40 bg-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-surface-900/50;
+	box-shadow:
+		0 1px 0 0 rgba(255, 255, 255, 0.4) inset,
+		0 8px 32px -8px rgba(24, 24, 27, 0.18);
+}
+
+.dark .glass {
+	box-shadow:
+		0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+		0 8px 32px -8px rgba(0, 0, 0, 0.55);
+}
+
+/* Stronger blur/opacity variant for modals & overlays that sit above content */
+.glass-panel {
+	@apply border border-white/50 bg-white/70 backdrop-blur-2xl dark:border-white/10 dark:bg-surface-900/70;
+	box-shadow:
+		0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
+		0 24px 64px -16px rgba(24, 24, 27, 0.28);
+}
+
+.dark .glass-panel {
+	box-shadow:
+		0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+		0 24px 64px -16px rgba(0, 0, 0, 0.65);
+}
+
+/* Lighter touch — dropdowns, tooltips, small floating chrome */
+.glass-chrome {
+	@apply border border-white/40 bg-white/75 backdrop-blur-lg dark:border-white/10 dark:bg-surface-900/60;
+	box-shadow: 0 4px 24px -8px rgba(24, 24, 27, 0.16);
+}
+
+.dark .glass-chrome {
+	box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
+/* Warm amber glow for hover/focus/active accents on glass elements */
+.glow-accent {
+	transition:
+		box-shadow 0.25s ease,
+		transform 0.25s ease;
+}
+
+.glow-accent:hover {
+	box-shadow: 0 0 0 1px var(--color-accent-400) inset, 0 0 24px -4px var(--color-accent-500);
+}
+
+.glow-brand:hover {
+	box-shadow: 0 0 0 1px var(--color-brand-400) inset, 0 0 24px -4px var(--color-brand-500);
 }
 
 /* Subtle premium scrollbar */

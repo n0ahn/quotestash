@@ -255,17 +255,16 @@
   }
 
   function handleWindowKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && open) {
-        close();
-      }
+    if (e.key === 'Escape' && open) {
+      close();
     }
+  }
 
-    $effect(() => {
-      if (typeof document !== 'undefined') {
-        document.body.classList.toggle('overflow-hidden', open);
-      }
-    });
-
+  $effect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.classList.toggle('overflow-hidden', open);
+    }
+  });
 </script>
 
 <svelte:window onkeydown={handleWindowKeydown} />

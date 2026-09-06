@@ -4,7 +4,7 @@
   import { supabase } from '$lib/supabase';
   import RoomCard from '$lib/components/RoomCard.svelte';
   import RoomModal from '$lib/components/RoomModal.svelte';
-  import { Plus } from 'lucide-svelte';
+  import { Plus, Search, X } from 'lucide-svelte';
   import type { RoomWithOwnership } from '$lib/database.types';
 
   type RoomListItem = RoomWithOwnership & { member_count: number };
@@ -12,6 +12,15 @@
   let rooms = $state<RoomListItem[]>([]);
   let loading = $state(true);
   let modalOpen = $state(false);
+  let searchQuery = $state('');
+
+  const filteredRooms = $derived.by(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return rooms;
+    return rooms.filter(
+      (r) => r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q)
+    );
+  });
 
   async function loadRooms() {
     loading = true;
@@ -88,6 +97,27 @@
       </button>
     </div>
 
+    {#if !loading && rooms.length > 0}
+      <div class="relative mb-6">
+        <Search size={16} class="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+        <input
+          type="text"
+          bind:value={searchQuery}
+          placeholder="Search your stashes…"
+          class="w-full h-11 pl-11 pr-10 rounded-2xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-[13.5px] text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
+        />
+        {#if searchQuery}
+          <button
+            onclick={() => (searchQuery = '')}
+            aria-label="Clear search"
+            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-full text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        {/if}
+      </div>
+    {/if}
+
     {#if loading}
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {#each Array(4) as _}
@@ -95,11 +125,19 @@
         {/each}
       </div>
     {:else if rooms.length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {#each rooms as room (room.id)}
-          <RoomCard {room} />
-        {/each}
-      </div>
+      {#if filteredRooms.length > 0}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {#each filteredRooms as room (room.id)}
+            <RoomCard {room} />
+          {/each}
+        </div>
+      {:else}
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <p class="text-[13px] text-surface-400 dark:text-surface-500">
+            No stashes match "{searchQuery}"
+          </p>
+        </div>
+      {/if}
     {/if}
   </div>
 </div>

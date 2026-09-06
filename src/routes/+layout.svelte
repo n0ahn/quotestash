@@ -1,9 +1,11 @@
 <script lang="ts">
 	import './layout.css';
-	import { Sun, Moon, Monitor } from 'lucide-svelte';
+	import { Sun, Moon, Monitor, Command } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import ProfileMenu from '$lib/components/ProfileMenu.svelte';
+	import NotificationBell from '$lib/components/NotificationBell.svelte';
+	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import { dev } from '$app/environment';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 
@@ -48,13 +50,15 @@
 
 	const hideChromeOn = ['/', '/auth/login', '/auth/register'];
 	let showProfileMenu = $derived(!hideChromeOn.includes(page.url.pathname));
+
+	let paletteOpen = $state(false);
 </script>
 <svelte:head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 </svelte:head>
 
 <div class="min-h-screen">
-	<div class="fixed top-0 left-0 right-0 z-101 h-20 flex items-center justify-between px-4 bg-surface-950/50 sm:bg-surface-950/0 backdrop-blur-3xl sm:backdrop-blur-none">
+	<div class="fixed top-0 left-0 right-0 z-101 p-4 flex items-center justify-between px-4 bg-surface-950/50 sm:bg-surface-950/0 backdrop-blur-3xl sm:backdrop-blur-none">
   <a class="flex items-center gap-3 cursor-pointer" href="/">
     <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-500">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -65,9 +69,29 @@
   </a>
 
   {#if showProfileMenu}
-    <ProfileMenu />
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        onclick={() => (paletteOpen = true)}
+        class="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800 shadow-sm transition-colors"
+        aria-label="Open command palette"
+      >
+        <Command size={13} class="text-surface-400" />
+        <span class="text-[11px] font-medium text-surface-400">Search</span>
+        <kbd class="flex items-center justify-center px-1.5 h-4.5 rounded text-[9.5px] font-semibold text-surface-400 bg-surface-100 dark:bg-surface-800 gap-0.5">
+          <Command size={8} class="text-surface-400" />K
+        </kbd>
+      </button>
+
+      <NotificationBell />
+      <ProfileMenu />
+    </div>
   {/if}
 </div>
+
+{#if showProfileMenu}
+  <CommandPalette bind:open={paletteOpen} />
+{/if}
 
 	<div
 		class="hidden fixed bottom-4 right-4 z-50 sm:flex items-center gap-0.5 rounded-full border border-surface-200 bg-white/80 p-1 shadow-sm backdrop-blur-md dark:border-surface-800 dark:bg-surface-900/80"

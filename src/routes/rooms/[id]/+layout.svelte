@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabase';
-  import { LayoutDashboard, MessageSquareQuote, Trophy, Users, Puzzle, Crown, Settings } from 'lucide-svelte';
+  import { LayoutDashboard, MessageSquareQuote, Trophy, Users, Puzzle, Crown } from 'lucide-svelte';
   import type { Database } from '$lib/database.types';
 
   type Room = Database['public']['Tables']['rooms']['Row'];
@@ -16,17 +16,13 @@
 
   const roomId = $derived(page.params.id!);
 
-  const baseNavItems = [
+  const navItems = [
     { href: '', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/quotes', icon: MessageSquareQuote, label: 'Quotes' },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { href: '/members', icon: Users, label: 'Members' },
     { href: '/quiz', icon: Puzzle, label: 'Quiz' }
   ];
-
-  const navItems = $derived(
-    isOwner ? [...baseNavItems, { href: '/settings', icon: Settings, label: 'Settings' }] : baseNavItems
-  );
 
   function isActive(href: string): boolean {
     const target = `/rooms/${roomId}${href}`;
@@ -115,7 +111,7 @@
     </main>
 
     <!-- Bottom nav (mobile) -->
-    <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-101 flex items-center justify-around border-t border-surface-200 dark:border-surface-800 bg-white/90 dark:bg-surface-950/90 backdrop-blur-md py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-surface-200 dark:border-surface-800 bg-white/90 dark:bg-surface-950/90 backdrop-blur-md py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
       {#each navItems as item (item.label)}
         <a
           href="/rooms/{roomId}{item.href}"

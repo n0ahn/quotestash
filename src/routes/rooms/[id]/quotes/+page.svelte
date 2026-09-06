@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/state';
+  import { replaceState } from '$app/navigation';
   import { supabase } from '$lib/supabase';
   import QuoteCard from '$lib/components/QuoteCard.svelte';
   import QuoteModal from '$lib/components/QuoteModal.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import { Plus, Search, X, Heart, Quote as QuoteIcon } from 'lucide-svelte';
   import type { QuoteWithDetails } from '$lib/database.types';
+  import type { RealtimeChannel } from '@supabase/supabase-js';
 
   const roomId = $derived(page.params.id!);
 
@@ -33,6 +35,8 @@
 
   // De "master list" van tags komt uit room_tags
   let allTags = $state<string[]>([]);
+
+  let realtimeChannel: RealtimeChannel | null = null;
 
   const filteredQuotes = $derived.by(() => {
     let result = quotes;
@@ -169,6 +173,121 @@
     loading = false;
   }
 
+  /**
+   * Eén losse quote (met adder-join) ophalen en in de lokale state zetten.
+   * Gebruikt na een realtime INSERT/UPDATE, zodat we niet de hele lijst
+   * opnieuw hoeven te laden voor één wijziging.
+   */
+  async function fetchAndUpsertQuote(id: string) {
+    const { data, error } = await supabase
+      .from('quotes')
+      .select('*, adder:users!quotes_added_by_fkey(id, first_name)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error || !data) {
+      if (error) console.error('realtime quote fetch failed', error);
+      return;
+    }
+
+    const normalized = {
+      ...(data as any),
+      adder: Array.isArray((data as any).adder) ? (data as any).adder[0] : (data as any).adder
+    } as QuoteWithDetails;
+
+    const exists = quotes.some((q) => q.id === normalized.id);
+    quotes = exists
+      ? quotes.map((q) => (q.id === normalized.id ? normalized : q))
+      : [normalized, ...quotes];
+  }
+
+  function subscribeToRealtime() {
+    realtimeChannel = supabase
+      .channel(`room-quotes:${roomId}`)
+      // Nieuwe / gewijzigde quotes in deze room
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'quotes', filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          fetchAndUpsertQuote((payload.new as any).id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'quotes', filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          fetchAndUpsertQuote((payload.new as any).id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'quotes', filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          const deletedId = (payload.old as any).id;
+          quotes = quotes.filter((q) => q.id !== deletedId);
+        }
+      )
+      // Favorites — geen room_id kolom op quote_favorites, dus niet server-side
+      // te filteren op room; we filteren client-side op quote_id in deze room.
+      // Onze eigen acties zijn al optimistic verwerkt in toggleFavorite(),
+      // dus die negeren we hier om dubbeltellingen te voorkomen — deze
+      // listener is puur voor wat ándere leden doen.
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'quote_favorites' },
+        (payload) => {
+          const row = payload.new as any;
+          if (row.user_id === currentUserId) return;
+          if (!quotes.some((q) => q.id === row.quote_id)) return;
+
+          favoriteCounts = { ...favoriteCounts, [row.quote_id]: (favoriteCounts[row.quote_id] ?? 0) + 1 };
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'quote_favorites' },
+        (payload) => {
+          const row = payload.old as any;
+          if (row.user_id === currentUserId) return;
+          if (!quotes.some((q) => q.id === row.quote_id)) return;
+
+          favoriteCounts = {
+            ...favoriteCounts,
+            [row.quote_id]: Math.max(0, (favoriteCounts[row.quote_id] ?? 1) - 1)
+          };
+        }
+      )
+      // Comments — zelfde verhaal: client-side filteren op quote_id in deze
+      // room, en onze eigen comments (toegevoegd op de detailpagina) hier
+      // negeren zodat de teller niet dubbel telt.
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'quote_comments' },
+        (payload) => {
+          const row = payload.new as any;
+          if (row.user_id === currentUserId) return;
+          if (!quotes.some((q) => q.id === row.quote_id)) return;
+
+          commentCounts = { ...commentCounts, [row.quote_id]: (commentCounts[row.quote_id] ?? 0) + 1 };
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'quote_comments' },
+        (payload) => {
+          const row = payload.old as any;
+          if (row.user_id === currentUserId) return;
+          if (!quotes.some((q) => q.id === row.quote_id)) return;
+
+          commentCounts = {
+            ...commentCounts,
+            [row.quote_id]: Math.max(0, (commentCounts[row.quote_id] ?? 1) - 1)
+          };
+        }
+      )
+      .subscribe();
+  }
+
   async function removeTagFromQuote(quoteId: string, tagToRemove: string) {
     const targetQuote = quotes.find((q) => q.id === quoteId);
     if (!targetQuote) return;
@@ -224,15 +343,16 @@
 
     if (isFav) {
       myFavorites = myFavorites.filter((id) => id !== quoteId);
-      favoriteCounts = { ...favoriteCounts, [quoteId]: Math.max(0, (favoriteCounts[quoteId] ?? 1) - 1) };
-      
-      // Als er geen favorieten meer over zijn, zet de filter direct uit
-      if (myFavorites.length === 0) {
-        filterFavorites = false;
-      }
     } else {
       myFavorites = [...myFavorites, quoteId];
-      favoriteCounts = { ...favoriteCounts, [quoteId]: (favoriteCounts[quoteId] ?? 0) + 1 };
+    }
+    favoriteCounts = {
+      ...favoriteCounts,
+      [quoteId]: Math.max(0, (favoriteCounts[quoteId] ?? 0) + (isFav ? -1 : 1))
+    };
+
+    if (isFav && myFavorites.length === 0) {
+      filterFavorites = false;
     }
 
     const { error } = isFav
@@ -292,7 +412,47 @@
     { value: 'favorites', label: 'Top favorites' }
   ];
 
-  onMount(loadData);
+  onMount(async () => {
+    await loadData();
+    subscribeToRealtime();
+  });
+
+  onDestroy(() => {
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+  });
+
+  // Command palette / deep links: ?new=1 opent meteen de "add quote" modal,
+  // ?tag=xyz zet meteen het tag-filter.
+  //
+  // Dit staat bewust in een $effect en niet (alleen) in onMount: onMount
+  // draait maar één keer, bij het eerste mounten van deze component. Als je
+  // al op /rooms/[id]/quotes staat en via Cmd+K nogmaals naar
+  // /rooms/[id]/quotes?new=1 navigeert, blijft SvelteKit op dezelfde route
+  // en wordt de component niet opnieuw gemount — dus onMount vuurt niet
+  // opnieuw af en de modal ging nooit open. Een $effect reageert wél elke
+  // keer dat page.url verandert, ook binnen een al-gemounte component.
+  $effect(() => {
+    const params = page.url.searchParams;
+    let cleaned = false;
+
+    if (params.get('new') === '1') {
+      modalOpen = true;
+      cleaned = true;
+    }
+
+    const tagParam = params.get('tag');
+    if (tagParam) {
+      filterTag = tagParam;
+      cleaned = true;
+    }
+
+    if (cleaned) {
+      const url = new URL(page.url);
+      url.searchParams.delete('new');
+      url.searchParams.delete('tag');
+      replaceState(url, {});
+    }
+  });
 </script>
 
 <svelte:head>

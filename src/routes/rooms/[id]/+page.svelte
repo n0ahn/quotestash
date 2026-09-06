@@ -23,9 +23,10 @@
     EyeOff,
     Ruler,
     CalendarDays,
-    Rows3
+    Rows3,
+    CornerDownRight
   } from 'lucide-svelte';
-  import type { QuoteWithDetails } from '$lib/database.types';
+  import type { QuoteWithDetails, NotificationType, NotificationWithDetails } from '$lib/database.types';
 
   const roomId = $derived(page.params.id!);
 
@@ -38,6 +39,51 @@
   let commentCounts = $state<Record<string, number>>({});
   let members = $state<Member[]>([]);
   let quizRows = $state<{ user_id: string; correct_count: number; total_count: number }[]>([]);
+  let activityRows = $state<NotificationWithDetails[]>([]);
+
+  // Zelfde icoon/kleur-stijl als NotificationBell — hier hergebruikt voor de
+  // room-brede "Recent activity" feed op het dashboard.
+  const ACTIVITY_ICON: Record<NotificationType, any> = {
+    new_quote: QuoteIcon,
+    new_comment: MessageCircle,
+    new_reply: CornerDownRight,
+    comment_like: Heart,
+    quote_favorite: Star,
+    reaction: Sparkles
+  };
+
+  const ACTIVITY_ICON_COLOR: Record<NotificationType, string> = {
+    new_quote: 'text-brand-500',
+    new_comment: 'text-brand-500',
+    new_reply: 'text-brand-500',
+    comment_like: 'text-red-500',
+    quote_favorite: 'text-amber-500',
+    reaction: 'text-fuchsia-500'
+  };
+
+  function activityAction(row: NotificationWithDetails): string {
+    switch (row.type) {
+      case 'new_quote':
+        return 'added a new quote';
+      case 'new_comment':
+        return 'commented on a quote';
+      case 'new_reply':
+        return 'replied to a comment';
+      case 'comment_like':
+        return 'liked a comment';
+      case 'quote_favorite':
+        return 'favorited a quote';
+      case 'reaction':
+        return `reacted ${row.reaction_emoji ?? ''} to a quote`;
+      default:
+        return 'did something';
+    }
+  }
+
+  function activityHref(row: NotificationWithDetails): string {
+    if (row.quote_id) return `/rooms/${roomId}/quotes/${row.quote_id}`;
+    return `/rooms/${roomId}/quotes`;
+  }
 
   function colorFromString(str: string): string {
     let hash = 0;
@@ -119,6 +165,32 @@
 
     if (quizError) console.error('quiz results load error', quizError);
     quizRows = quizData ?? [];
+
+    // Room-brede "Recent activity": notifications zijn per-ontvanger gefanoutd
+    // (bv. 1 rij per lid bij een nieuwe quote), dus we dedupliceren op de
+    // onderliggende gebeurtenis zodat elke actie maar 1x in de feed staat.
+    const { data: activityData, error: activityError } = await supabase
+      .from('notifications')
+      .select('*, actor:users!notifications_actor_id_fkey(id, first_name)')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (activityError) console.error('activity load error', activityError);
+
+    const seen = new Set<string>();
+    const deduped: NotificationWithDetails[] = [];
+    for (const row of (activityData ?? []) as any[]) {
+      const key = `${row.type}:${row.actor_id}:${row.quote_id}:${row.comment_id}:${row.created_at}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push({
+        ...row,
+        actor: Array.isArray(row.actor) ? row.actor[0] : row.actor
+      });
+      if (deduped.length >= 8) break;
+    }
+    activityRows = deduped;
 
     loading = false;
   }
@@ -587,28 +659,37 @@
     <!-- Recent activity -->
     <div class="mt-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
       <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4">Recent activity</h2>
-      <div class="flex flex-col gap-1">
-        {#each [...quotes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5) as q (q.id)}
-          <a
-            href="/rooms/{roomId}/quotes/{q.id}"
-            class="flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors"
-          >
-            <div
-              class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl text-white text-[11px] font-bold"
-              style="background-color: {q.adder?.first_name ? colorFromString(q.adder.first_name) : colorFromString(q.id)};"
+      {#if activityRows.length === 0}
+        <div class="flex flex-col items-center justify-center py-8 text-center">
+          <p class="text-[12.5px] text-surface-400 dark:text-surface-500">Nothing yet — activity will show up here.</p>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-1">
+          {#each activityRows as row (`${row.type}:${row.actor_id}:${row.quote_id}:${row.comment_id}:${row.created_at}`)}
+            <a
+              href={activityHref(row)}
+              class="flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-800/60 transition-colors"
             >
-              {(q.adder?.first_name ?? '?').charAt(0).toUpperCase()}
-            </div>
-            <p class="min-w-0 flex-1 text-[12.5px] text-surface-600 dark:text-surface-300 truncate">
-              <span class="font-semibold text-surface-800 dark:text-surface-100">{q.adder?.first_name ?? 'Someone'}</span>
-              added "{q.lines[0]?.text ?? ''}"
-            </p>
-            <span class="shrink-0 text-[10.5px] text-surface-400 dark:text-surface-500">
-              {new Date(q.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-            </span>
-          </a>
-        {/each}
-      </div>
+              <div
+                class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl {ACTIVITY_ICON_COLOR[row.type]} bg-surface-100 dark:bg-surface-800"
+              >
+                <!-- svelte-ignore svelte_component_deprecated -->
+                <svelte:component this={ACTIVITY_ICON[row.type]} size={14} strokeWidth={2.25} />
+              </div>
+              <p class="min-w-0 flex-1 text-[12.5px] text-surface-600 dark:text-surface-300 truncate">
+                <span class="font-semibold text-surface-800 dark:text-surface-100">{row.actor?.first_name ?? 'Someone'}</span>
+                {activityAction(row)}
+                {#if row.preview_text}
+                  <span class="text-surface-400 dark:text-surface-500">— "{row.preview_text}"</span>
+                {/if}
+              </p>
+              <span class="shrink-0 text-[10.5px] text-surface-400 dark:text-surface-500">
+                {new Date(row.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </span>
+            </a>
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>

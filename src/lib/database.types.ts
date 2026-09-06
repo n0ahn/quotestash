@@ -336,6 +336,118 @@ export interface Database {
           }
         ];
       };
+
+      quote_reactions: {
+        Row: {
+          id: string;
+          quote_id: string;
+          user_id: string;
+          emoji: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          quote_id: string;
+          user_id: string;
+          emoji: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          quote_id?: string;
+          user_id?: string;
+          emoji?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'quote_reactions_quote_id_fkey';
+            columns: ['quote_id'];
+            isOneToOne: false;
+            referencedRelation: 'quotes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'quote_reactions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          room_id: string;
+          actor_id: string | null;
+          type: 'new_quote' | 'new_comment' | 'new_reply' | 'comment_like' | 'quote_favorite' | 'reaction';
+          quote_id: string | null;
+          comment_id: string | null;
+          reaction_emoji: string | null;
+          preview_text: string | null;
+          read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          room_id: string;
+          actor_id?: string | null;
+          type: 'new_quote' | 'new_comment' | 'new_reply' | 'comment_like' | 'quote_favorite' | 'reaction';
+          quote_id?: string | null;
+          comment_id?: string | null;
+          reaction_emoji?: string | null;
+          preview_text?: string | null;
+          read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          room_id?: string;
+          actor_id?: string | null;
+          type?: 'new_quote' | 'new_comment' | 'new_reply' | 'comment_like' | 'quote_favorite' | 'reaction';
+          quote_id?: string | null;
+          comment_id?: string | null;
+          reaction_emoji?: string | null;
+          preview_text?: string | null;
+          read?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notifications_actor_id_fkey';
+            columns: ['actor_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notifications_room_id_fkey';
+            columns: ['room_id'];
+            isOneToOne: false;
+            referencedRelation: 'rooms';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notifications_quote_id_fkey';
+            columns: ['quote_id'];
+            isOneToOne: false;
+            referencedRelation: 'quotes';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
 
     Views: {
@@ -388,6 +500,46 @@ export type CommentWithDetails =
 
 export type RoomTag =
   Database['public']['Tables']['room_tags']['Row'];
+
+export type NotificationType = Database['public']['Tables']['notifications']['Row']['type'];
+
+export type NotificationWithDetails =
+  Database['public']['Tables']['notifications']['Row'] & {
+    actor?: {
+      id: string;
+      first_name: string;
+    } | null;
+    room?: {
+      id: string;
+      name: string;
+    } | null;
+  };
+
+export function notificationMessage(n: NotificationWithDetails): string {
+  const name = n.actor?.first_name ?? 'Someone';
+  switch (n.type) {
+    case 'new_quote':
+      return `${name} added a new quote`;
+    case 'new_comment':
+      return `${name} commented on your quote`;
+    case 'new_reply':
+      return `${name} replied to your comment`;
+    case 'comment_like':
+      return `${name} liked your comment`;
+    case 'quote_favorite':
+      return `${name} favorited your quote`;
+    case 'reaction':
+      return `${name} reacted ${n.reaction_emoji ?? ''} to your quote`;
+    default:
+      return `${name} did something`;
+  }
+}
+
+/** Waar moet je heen als je op deze notificatie klikt? */
+export function notificationHref(n: NotificationWithDetails): string {
+  if (n.quote_id) return `/rooms/${n.room_id}/quotes/${n.quote_id}`;
+  return `/rooms/${n.room_id}/quotes`;
+}
 
 export type QuizMode = 'who_said_it' | 'fact_or_fluff';
 
