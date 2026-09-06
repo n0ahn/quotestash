@@ -204,15 +204,12 @@
         dismissToast(t.id);
         handleNotificationClick(t.notification);
       }}
-      class="pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl
-             bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl
-             ring-1 ring-black/5 dark:ring-white/10
-             shadow-[0_16px_40px_-8px_rgba(0,0,0,0.3)]
+      class="glass-chrome pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl
              text-left animate-[toastIn_0.25s_cubic-bezier(0.16,1,0.3,1)]"
     >
       <span
         class="flex items-center justify-center w-8 h-8 rounded-full shrink-0
-               bg-surface-100 dark:bg-surface-800 {NOTIFICATION_ICON_COLOR[t.notification.type]}"
+               bg-black/[0.04] dark:bg-white/[0.06] {NOTIFICATION_ICON_COLOR[t.notification.type]}"
       >
         <!-- svelte-ignore svelte_component_deprecated -->
         <svelte:component this={NOTIFICATION_ICON[t.notification.type]} size={15} strokeWidth={2.25} />
@@ -238,11 +235,9 @@
       if (open) loadNotifications();
     }}
     aria-label="Notifications"
-    class="relative flex items-center justify-center w-9 h-9 rounded-full
-           border border-surface-200 dark:border-surface-800
-           bg-white dark:bg-surface-900
-           hover:bg-surface-50 dark:hover:bg-surface-800
-           shadow-sm active:scale-90
+    class="glass-chrome relative flex items-center justify-center w-9 h-9 rounded-full
+           hover:bg-white/90 dark:hover:bg-surface-800/70
+           active:scale-90
            transition-all"
   >
     <Bell size={16} class="text-surface-600 dark:text-surface-300" strokeWidth={2} />
@@ -252,7 +247,7 @@
         class="absolute -top-1 -right-1 flex items-center justify-center
                min-w-4.5 h-4.5 px-1 rounded-full
                bg-red-500 text-white text-[10px] font-bold
-               ring-2 ring-white dark:ring-surface-950"
+               ring-2 ring-white/80 dark:ring-surface-950/80"
       >
         {unreadCount > 9 ? '9+' : unreadCount}
       </span>
@@ -261,16 +256,13 @@
 
   {#if open}
     <div
-      class="absolute right-0 mt-2 w-88 max-w-[calc(100vw-2rem)]
+      class="glass-chrome absolute right-0 mt-2 w-88 max-w-[calc(100vw-2rem)]
              max-h-112 flex flex-col
-             rounded-2xl bg-white/95 dark:bg-surface-900/95
-             backdrop-blur-xl
-             ring-1 ring-black/5 dark:ring-white/10
-             shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)]
+             rounded-2xl
              overflow-hidden
              animate-[dropdownIn_0.15s_ease-out]"
     >
-      <div class="flex items-center justify-between px-4 py-3 border-b border-surface-100 dark:border-surface-800 shrink-0">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.08] shrink-0">
         <p class="text-[13px] font-bold text-surface-900 dark:text-surface-50">Notifications</p>
         {#if unreadCount > 0}
           <button
@@ -287,11 +279,11 @@
         {#if loading}
           <div class="flex flex-col gap-2 p-3">
             {#each Array(3) as _}
-              <div class="h-14 rounded-xl bg-surface-100 dark:bg-surface-800 animate-pulse"></div>
+              <div class="h-14 rounded-xl bg-black/[0.04] dark:bg-white/[0.05] animate-pulse"></div>
             {/each}
           </div>
         {:else if notifications.length === 0}
-          <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <div class="flex flex-col items-center justify-center py-12 px-4 text-center ">
             <Bell size={26} strokeWidth={1.75} class="text-surface-300 dark:text-surface-600 mb-2" />
             <p class="text-[12.5px] text-surface-400 dark:text-surface-500">
               Nothing yet — new quotes and comments will show up here.
@@ -306,12 +298,12 @@
                 class="w-full flex items-start gap-3 px-2.5 py-2.5 rounded-xl text-left
                        transition-colors
                        {n.read
-                  ? 'hover:bg-surface-100 dark:hover:bg-surface-800/60'
+                  ? 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
                   : 'bg-brand-500/5 hover:bg-brand-500/10'}"
               >
                 <span
                   class="flex items-center justify-center w-7 h-7 rounded-full shrink-0
-                         bg-surface-100 dark:bg-surface-800 {NOTIFICATION_ICON_COLOR[n.type]}"
+                         bg-black/[0.04] dark:bg-white/[0.06] {NOTIFICATION_ICON_COLOR[n.type]}"
                 >
                   <!-- svelte-ignore svelte_component_deprecated -->
                   <svelte:component this={NOTIFICATION_ICON[n.type]} size={13} strokeWidth={2.25} />

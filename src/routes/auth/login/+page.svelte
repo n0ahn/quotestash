@@ -34,14 +34,16 @@
   <title>Sign In · QuoteStash</title>
 </svelte:head>
 
-<div class="min-h-screen flex flex-col justify-center px-5 py-12">
-  <div class="mx-auto w-full max-w-sm">
+<div class="relative min-h-screen flex flex-col justify-center px-5 py-12 overflow-hidden">
+  <div class="app-ambient default-blobs"></div>
+
+  <div class="relative z-10 mx-auto w-full max-w-sm">
     <div class="flex flex-col items-center mb-8 text-center">
       <h2 class="text-2xl font-bold text-surface-900 dark:text-surface-50">Welcome back</h2>
       <p class="text-[13px] text-surface-500 dark:text-surface-400 mt-1.5">Sign in to access your rooms</p>
     </div>
 
-    <div class="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.04)] dark:shadow-none p-7">
+    <div class="glass-panel rounded-3xl p-7">
       <form onsubmit={handleLogin} class="space-y-4">
         <div>
           <label for="email" class="block text-[12px] font-semibold text-surface-600 dark:text-surface-400 mb-1.5">Email</label>
@@ -51,7 +53,7 @@
             required
             bind:value={email}
             placeholder="you@example.com"
-            class="w-full h-11 px-4 rounded-2xl text-[14px] bg-surface-100 dark:bg-surface-800 border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+            class="w-full h-11 px-4 rounded-2xl text-[14px] bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-white/60 dark:focus:bg-white/[0.08] transition-all"
           />
         </div>
 
@@ -63,7 +65,7 @@
             required
             bind:value={password}
             placeholder="••••••••"
-            class="w-full h-11 px-4 rounded-2xl text-[14px] bg-surface-100 dark:bg-surface-800 border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+            class="w-full h-11 px-4 rounded-2xl text-[14px] bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-white/60 dark:focus:bg-white/[0.08] transition-all"
           />
         </div>
 

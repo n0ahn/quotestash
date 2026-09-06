@@ -331,6 +331,7 @@
     { bg: 'bg-gradient-to-br from-slate-300 to-slate-400', ring: 'ring-slate-300/50' },
     { bg: 'bg-gradient-to-br from-orange-400 to-orange-600', ring: 'ring-orange-400/50' }
   ];
+  const medalLineColors = ['#f59e0b', '#94a3b8', '#f97316'];
 
   onMount(loadData);
 </script>
@@ -349,7 +350,7 @@
   <p class="text-[13px] text-surface-500 dark:text-surface-400 mt-1 ml-11.5">Who's stealing the show in this room?</p>
 
   <!-- Tabs -->
-  <div class="flex items-center gap-1 mt-7 mb-4 p-1 rounded-2xl bg-surface-100 dark:bg-surface-800 w-fit max-w-full overflow-x-auto">
+  <div class="flex items-center gap-1 mt-7 mb-4 p-1 rounded-2xl glass-chrome w-fit max-w-full overflow-x-auto">
     {#each tabs as tab (tab.id)}
       <button
         onclick={() => (activeTab = tab.id)}
@@ -413,9 +414,12 @@
           {@const accentColor = entry.quote.color || colorFromString(entry.quote.id)}
           <a
             href="/rooms/{roomId}/quotes/{entry.quote.id}"
-            class="group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+            class="group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-3xl glass hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
           >
-            <div class="absolute top-0 left-0 right-0 h-1" style="background-color: {accentColor};"></div>
+            <div
+              class="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[3px] rounded-full blur-[1px] opacity-70"
+              style="background: linear-gradient(90deg, transparent, {accentColor}, transparent);"
+            ></div>
 
             <div class="shrink-0 flex flex-col items-center justify-center w-8 sm:w-10">
               {#if i < 3}
@@ -476,9 +480,12 @@
     {:else}
       <div class="grid gap-3 sm:grid-cols-2">
         {#each topQuoted as person, i (person.name)}
-          <div class="relative flex flex-col gap-3 p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] transition-all duration-200 overflow-hidden">
+          <div class="relative flex flex-col gap-3 p-5 rounded-3xl glass hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] transition-all duration-200 overflow-hidden">
             {#if i < 3}
-              <div class="absolute top-0 left-0 right-0 h-1 {medalStyles[i].bg}"></div>
+              <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[3px] rounded-full blur-[1px] opacity-70"
+                style="background: linear-gradient(90deg, transparent, {medalLineColors[i]}, transparent);"
+              ></div>
             {/if}
 
             <div class="flex items-center gap-3 min-w-0">
@@ -511,21 +518,21 @@
             </div>
 
             <div class="grid grid-cols-3 gap-2">
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-red-400">
                   <Heart size={12} fill="currentColor" />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{person.totalFavorites}</span>
                 </div>
                 <span class="text-[9px] font-medium text-surface-400 uppercase tracking-wide">Likes</span>
               </div>
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-surface-400">
                   <MessageCircle size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{person.totalComments}</span>
                 </div>
                 <span class="text-[9px] font-medium text-surface-400 uppercase tracking-wide">Comments</span>
               </div>
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-amber-500">
                   <Sparkles size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{person.avgFavorites.toFixed(1)}</span>
@@ -573,9 +580,12 @@
     {:else}
       <div class="flex flex-col gap-3">
         {#each topQuizzers as quizzer, i (quizzer.id)}
-          <div class="relative flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] transition-all duration-200 overflow-hidden">
+          <div class="relative flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-3xl glass hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] transition-all duration-200 overflow-hidden">
             {#if i < 3}
-              <div class="absolute top-0 left-0 right-0 h-1 {medalStyles[i].bg}"></div>
+              <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[3px] rounded-full blur-[1px] opacity-70"
+                style="background: linear-gradient(90deg, transparent, {medalLineColors[i]}, transparent);"
+              ></div>
             {/if}
 
             <div class="flex items-center gap-3 sm:w-52 shrink-0 min-w-0">
@@ -603,21 +613,21 @@
             </div>
 
             <div class="flex-1 grid grid-cols-3 gap-2 min-w-0">
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-brand-500">
                   <Target size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{quizzer.accuracy.toFixed(0)}%</span>
                 </div>
                 <span class="text-[9px] font-medium text-surface-400 uppercase tracking-wide">Accuracy</span>
               </div>
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-emerald-500">
                   <Brain size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{quizzer.totalCorrect}</span>
                 </div>
                 <span class="text-[9px] font-medium text-surface-400 uppercase tracking-wide">Correct</span>
               </div>
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-surface-400">
                   <Sparkles size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{quizzer.totalQuestions}</span>
@@ -639,9 +649,12 @@
     {:else}
       <div class="flex flex-col gap-3">
         {#each topQuoters as quoter, i (quoter.id)}
-          <div class="relative flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] transition-all duration-200 overflow-hidden">
+          <div class="relative flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-3xl glass hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] transition-all duration-200 overflow-hidden">
             {#if i < 3}
-              <div class="absolute top-0 left-0 right-0 h-1 {medalStyles[i].bg}"></div>
+              <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[3px] rounded-full blur-[1px] opacity-70"
+                style="background: linear-gradient(90deg, transparent, {medalLineColors[i]}, transparent);"
+              ></div>
             {/if}
 
             <div class="flex items-center gap-3 sm:w-52 shrink-0 min-w-0">
@@ -667,28 +680,28 @@
             </div>
 
             <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 min-w-0">
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-brand-500">
                   <Quote size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{quoter.quoteCount}</span>
                 </div>
                 <span class="text-[9px] font-medium text-surface-400 uppercase tracking-wide">Quotes</span>
               </div>
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-red-400">
                   <Heart size={12} fill="currentColor" />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{quoter.totalFavoritesEarned}</span>
                 </div>
                 <span class="text-[9px] font-medium text-surface-400 uppercase tracking-wide">Likes</span>
               </div>
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-surface-400">
                   <MessageCircle size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{quoter.totalCommentsEarned}</span>
                 </div>
                 <span class="text-[9px] font-medium text-surface-400 uppercase tracking-wide">Comments</span>
               </div>
-              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl bg-surface-50 dark:bg-surface-800/60">
+              <div class="flex flex-col items-center justify-center gap-0.5 py-2 rounded-2xl glass-inset">
                 <div class="flex items-center gap-1 text-amber-500">
                   <Sparkles size={12} />
                   <span class="text-[13px] font-extrabold text-surface-800 dark:text-surface-100">{quoter.avgFavorites.toFixed(1)}</span>

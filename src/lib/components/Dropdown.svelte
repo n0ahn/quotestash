@@ -26,21 +26,21 @@
   <button
     type="button"
     onclick={() => (open = !open)}
-    class="flex items-center gap-1.5 h-9 pl-3 pr-2.5 rounded-xl text-[12px] font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+    class="flex items-center gap-1.5 h-9 pl-3 pr-2.5 rounded-xl text-[12px] font-medium bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-700 dark:text-surface-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
   >
     {selectedLabel}
     <ChevronDown size={13} class="text-surface-400 transition-transform {open ? 'rotate-180' : ''}" />
   </button>
 
   {#if open}
-    <div class="absolute left-0 mt-1.5 min-w-40 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 shadow-lg z-100 p-1.5">
+    <div class="glass-chrome absolute left-0 mt-1.5 min-w-40 max-h-64 overflow-y-auto rounded-2xl z-100 p-1.5">
       {#each options as opt (opt.value)}
         <button
           type="button"
           onclick={() => select(opt.value)}
           class="w-full text-left px-3 py-2 rounded-xl text-[12.5px] font-medium transition-colors {value === opt.value
             ? 'bg-brand-500/10 text-brand-500'
-            : 'text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'}"
+            : 'text-surface-700 dark:text-surface-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}"
         >
           {opt.label}
         </button>

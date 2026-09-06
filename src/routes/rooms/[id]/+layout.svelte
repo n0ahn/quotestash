@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabase';
-  import { LayoutDashboard, MessageSquareQuote, Trophy, Users, Puzzle, Crown } from 'lucide-svelte';
+  import { LayoutDashboard, MessageSquareQuote, Trophy, Users, Puzzle, Crown, Settings } from 'lucide-svelte';
   import type { Database } from '$lib/database.types';
 
   type Room = Database['public']['Tables']['rooms']['Row'];
@@ -23,6 +23,13 @@
     { href: '/members', icon: Users, label: 'Members' },
     { href: '/quiz', icon: Puzzle, label: 'Quiz' }
   ];
+
+  // Owner-only — appended to the desktop sidebar, kept off the mobile bottom
+  // nav (which only has room for 5 items) since it's reachable from there
+  // via the "All rooms" back-link → room card → ⌘K, or by widening the app.
+  const ownerNavItems = $derived(
+    isOwner ? [...navItems, { href: '/settings', icon: Settings, label: 'Settings' }] : navItems
+  );
 
   function isActive(href: string): boolean {
     const target = `/rooms/${roomId}${href}`;
@@ -69,8 +76,8 @@
     <aside
       class="hidden sm:flex flex-col w-60 shrink-0
              sm:fixed sm:inset-y-0 sm:left-0 sm:h-screen sm:z-30
-             border-r border-surface-200 dark:border-surface-800
-             bg-white dark:bg-surface-950
+             border-r border-black/[0.06] dark:border-white/[0.08]
+             bg-white/20 backdrop-blur-xl dark:bg-surface-900/18
              px-4 pt-24 pb-6"
     >
       <div class="px-2 mb-6">
@@ -84,12 +91,12 @@
       </div>
 
       <nav class="flex flex-col gap-1 overflow-y-auto">
-        {#each navItems as item (item.label)}
+        {#each ownerNavItems as item (item.label)}
         <a
             href="/rooms/{roomId}{item.href}"
             class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors {isActive(item.href)
               ? 'bg-brand-500/10 text-brand-500'
-              : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'}"
+              : 'text-surface-600 dark:text-surface-400 hover:bg-black/[0.03] hover:backdrop-blur-md dark:hover:bg-white/[0.05]'}"
           >
             <item.icon size={16} strokeWidth={2} />
             {item.label}
@@ -111,8 +118,8 @@
     </main>
 
     <!-- Bottom nav (mobile) -->
-    <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-surface-200 dark:border-surface-800 bg-white/90 dark:bg-surface-950/90 backdrop-blur-md py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-      {#each navItems as item (item.label)}
+    <nav class="glass-panel sm:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around !rounded-none border-x-0 border-b-0 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      {#each ownerNavItems as item (item.label)}
         <a
           href="/rooms/{roomId}{item.href}"
           class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-[10px] font-medium transition-colors {isActive(item.href)

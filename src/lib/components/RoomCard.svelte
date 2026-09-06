@@ -20,15 +20,18 @@
 
 <a
   href="/rooms/{room.id}"
-  class="group relative flex flex-col justify-between h-32 p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:border-brand-500/40 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:hover:shadow-none transition-all overflow-hidden"
+  class="glass group relative flex flex-col justify-between h-32 p-5 rounded-3xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
 >
-  <!-- Accent bar -->
-  <div class="absolute top-0 left-0 right-0 h-1" style="background-color: {accentColor};"></div>
+  <!-- Accent -->
+  <div
+    class="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[3px] rounded-full blur-[1px] opacity-70"
+    style="background: linear-gradient(90deg, transparent, {accentColor}, transparent);"
+  ></div>
 
   <div class="flex items-start justify-between">
     <div class="flex items-center gap-2.5 pr-2">
       <div
-        class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[13px] font-bold shrink-0"
+        class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[13px] font-bold shrink-0 shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset,0_4px_12px_-2px_rgba(0,0,0,0.25)]"
         style="background-color: {accentColor};"
       >
         {room.name.charAt(0).toUpperCase()}
@@ -44,7 +47,7 @@
 
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <span class="text-[11px] font-mono font-semibold tracking-widest text-surface-400 dark:text-surface-500 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded-lg">
+      <span class="text-[11px] font-mono font-semibold tracking-widest text-surface-500 dark:text-surface-400 bg-white/50 dark:bg-white/5 backdrop-blur-sm px-2 py-1 rounded-lg border border-black/[0.05] dark:border-white/[0.08]">
         {room.code}
       </span>
       <span class="text-[12px] text-surface-400 dark:text-surface-500">

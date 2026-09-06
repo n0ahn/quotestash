@@ -224,20 +224,18 @@
   <div class="fixed inset-0 z-200 flex items-start justify-center px-4 pt-[12vh] sm:pt-[16vh]">
     <button
       type="button"
-      class="absolute inset-0 bg-black/45 backdrop-blur-md animate-[fadeIn_0.15s_ease-out]"
+      class="absolute inset-0 bg-black/30 backdrop-blur-md animate-fade-in"
       onclick={close}
       aria-label="Close"
     ></button>
 
     <div
-      class="relative w-full max-w-lg
-             bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl
-             rounded-3xl shadow-[0_24px_70px_-12px_rgba(0,0,0,0.4)]
-             ring-1 ring-black/5 dark:ring-white/10
+      class="glass-panel relative w-full max-w-lg
+             rounded-3xl
              overflow-hidden
-             animate-[paletteIn_0.18s_cubic-bezier(0.16,1,0.3,1)]"
+             animate-palette-in"
     >
-      <div class="flex items-center gap-3 px-4 h-14 border-b border-surface-100 dark:border-surface-800">
+      <div class="flex items-center gap-3 px-4 h-14 border-b border-black/[0.05] dark:border-white/[0.08]">
         <Search size={17} class="text-surface-400 shrink-0" />
         <input
           bind:this={inputEl}
@@ -246,7 +244,7 @@
           placeholder="Search rooms or jump to a page…"
           class="flex-1 min-w-0 bg-transparent text-[14px] text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none"
         />
-        <kbd class="hidden sm:flex items-center justify-center px-1.5 h-5 rounded-md text-[10px] font-semibold text-surface-400 bg-surface-100 dark:bg-surface-800 shrink-0">
+        <kbd class="hidden sm:flex items-center justify-center px-1.5 h-5 rounded-md text-[10px] font-semibold text-surface-400 bg-black/[0.05] dark:bg-white/[0.06] shrink-0">
           esc
         </kbd>
       </div>
@@ -263,11 +261,11 @@
               onclick={() => run(item)}
               onmouseenter={() => (activeIndex = i)}
               class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors
-                     {i === activeIndex ? 'bg-brand-500/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800/60'}"
+                     {i === activeIndex ? 'bg-brand-500/10' : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'}"
             >
               <div
                 class="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg
-                       {i === activeIndex ? 'bg-brand-500 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}"
+                       {i === activeIndex ? 'bg-brand-500 text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-surface-500 dark:text-surface-400'}"
               >
                 <item.icon size={14} strokeWidth={2.25} />
               </div>
@@ -287,32 +285,3 @@
     </div>
   </div>
 {/if}
-
-<style>
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes paletteIn {
-    from {
-      opacity: 0;
-      transform: scale(0.97) translateY(-6px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    * {
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-    }
-  }
-</style>

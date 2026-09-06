@@ -481,12 +481,12 @@
   </div>
 
   <div class="relative mb-3">
-    <Search size={16} class="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+    <Search size={16} class="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none z-50" />
     <input
       type="text"
       bind:value={searchQuery}
       placeholder="Search quotes..."
-      class="w-full h-11 pl-11 pr-4 rounded-2xl text-[13.5px] bg-surface-100 dark:bg-surface-800 border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
+      class="w-full h-11 pl-11 pr-4 rounded-2xl text-[13.5px] glass-inset border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
     />
   </div>
 
@@ -504,7 +504,7 @@
       <button
         type="button"
         onclick={() => (filterFavorites = !filterFavorites)}
-        class="flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12px] font-medium transition-colors select-none {filterFavorites ? 'bg-red-500/10 text-red-500 dark:bg-red-500/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'}"
+        class="flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12px] font-medium transition-colors select-none {filterFavorites ? 'bg-red-500/10 text-red-500 dark:bg-red-500/20' : 'glass-inset text-surface-700 dark:text-surface-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08]'}"
       >
         <Heart size={14} fill={filterFavorites ? 'currentColor' : 'none'} class={filterFavorites ? 'text-red-500' : 'text-surface-400'} />
         <span>Favorites ({myFavorites.length})</span>

@@ -41,12 +41,15 @@
   let confirmingDelete = $state(false);
 </script>
 
-<div class="group relative flex flex-col gap-3 p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
-  <div class="absolute top-0 left-0 right-0 h-1" style="background-color: {accentColor};"></div>
+<div class="glass group relative flex flex-col gap-3 p-5 rounded-3xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+  <div
+    class="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[3px] rounded-full blur-[1px] opacity-70"
+    style="background: linear-gradient(90deg, transparent, {accentColor}, transparent);"
+  ></div>
 
   <a href="/rooms/{roomId}/quotes/{quote.id}" class="absolute inset-0 z-0" aria-label="View quote"></a>
   {#if quote.is_nsfw}
-        <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 w-15">
+        <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 backdrop-blur-sm text-red-500 w-15">
           <EyeOff size={10} />
           <span class="text-[9px] font-bold uppercase tracking-wide">NSFW</span>
         </div>
@@ -74,7 +77,7 @@
           <button
             onclick={(e) => { e.preventDefault(); confirmingDelete = true; }}
             aria-label="Delete quote"
-            class="p-1 rounded-full text-surface-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 active:scale-90 transition-all"
+            class="p-1 rounded-full text-surface-300 hover:text-red-500 hover:bg-red-50/70 dark:hover:bg-red-500/10 backdrop-blur-sm active:scale-90 transition-all"
           >
             <Trash2 size={14} />
           </button>
@@ -87,7 +90,7 @@
     {#each quote.lines as line, i (i)}
       <div class="flex items-start gap-2.5">
         <div
-          class="shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-white text-[11px] font-bold mt-0.5 ring-2 ring-white dark:ring-surface-900 shadow-sm"
+          class="shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-white text-[11px] font-bold mt-0.5 ring-2 ring-white/70 dark:ring-surface-900/70 shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset,0_4px_10px_-2px_rgba(0,0,0,0.2)]"
           style="background-color: {colorFromString(line.said_by)};"
         >
           {line.said_by.charAt(0).toUpperCase()}
@@ -106,7 +109,7 @@
     <div class="relative z-10 flex flex-wrap gap-1.5 pointer-events-auto">
       {#each quote.tags as tag, index (tag + index)}
         <div
-          class="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-lg
+          class="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-lg backdrop-blur-sm
                  hover:opacity-80 active:scale-95 transition-all"
           style:color={colorFromString(tag)}
           style:background-color={`${colorFromString(tag)}17`}
@@ -139,11 +142,11 @@
     </div>
   {/if}
 
-  <div class="relative z-10 flex items-center justify-between pointer-events-none pt-1 mt-auto border-t border-surface-100 dark:border-surface-800/70">
+  <div class="relative z-10 flex items-center justify-between pointer-events-none pt-1 mt-auto border-t border-black/[0.05] dark:border-white/[0.08]">
     {#if quote.adder?.first_name}
       <div class="flex items-center gap-1.5 min-w-0 pt-2.5" title={`Quoted by ${quote.adder.first_name}`}>
         <div
-          class="shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-white text-[9px] font-bold ring-2 ring-white dark:ring-surface-900"
+          class="shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-white text-[9px] font-bold ring-2 ring-white/70 dark:ring-surface-900/70"
           style="background-color: {colorFromString(quote.adder.first_name)};"
         >
           {quote.adder.first_name.charAt(0).toUpperCase()}

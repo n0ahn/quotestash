@@ -356,28 +356,28 @@
       <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide">As a quoter</h2>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-      <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
         <div class="flex items-center gap-1.5 text-brand-500">
           <Quote size={14} />
           <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{addedQuotes.length}</span>
         </div>
         <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Quotes added</span>
       </div>
-      <div class="flex flex-col items-center justify-center gap-1 -4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="flex flex-col items-center justify-center gap-1 -4 rounded-3xl glass">
         <div class="flex items-center gap-1.5 text-red-400">
           <Heart size={14} fill="currentColor" />
           <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{totalFavoritesEarned}</span>
         </div>
         <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Likes earned</span>
       </div>
-      <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
         <div class="flex items-center gap-1.5 text-surface-400">
           <MessageCircle size={14} />
           <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{totalCommentsEarned}</span>
         </div>
         <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Comments earned</span>
       </div>
-      <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
         <div class="flex items-center gap-1.5 text-amber-500">
           <Sparkles size={14} />
           <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{avgFavorites.toFixed(1)}</span>
@@ -387,7 +387,7 @@
     </div>
 
     {#if bestAdded}
-      <div class="mb-8 p-4 rounded-3xl bg-surface-50 dark:bg-surface-800 border border-surface-100 dark:border-surface-800">
+      <div class="mb-8 p-4 rounded-3xl glass-inset">
         <p class="text-[11px] font-semibold text-surface-400 uppercase tracking-wide mb-1.5">Their most popular addition</p>
         {#each bestAdded.quote.lines.slice(0, 1) as line}
           <p class="text-[13.5px] font-medium text-surface-800 dark:text-surface-100 leading-snug wrap-break-word">
@@ -407,21 +407,21 @@
       <p class="text-[13px] text-surface-400 dark:text-surface-500 mb-8">No one has quoted {memberName} yet.</p>
     {:else}
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1.5 text-brand-500">
             <Quote size={14} />
             <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{quotedLineCount}</span>
           </div>
           <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Times quoted</span>
         </div>
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1.5 text-red-400">
             <Heart size={14} fill="currentColor" />
             <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{quotedFavorites}</span>
           </div>
           <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Total likes</span>
         </div>
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1.5 text-amber-500">
             <Sparkles size={14} />
             <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{(quotedFavorites / quotedLineCount).toFixed(1)}</span>
@@ -444,7 +444,7 @@
       {/if}
 
       {#if bestQuoted}
-        <div class="mb-8 p-4 rounded-3xl bg-surface-50 dark:bg-surface-800 border border-surface-100 dark:border-surface-800">
+        <div class="mb-8 p-4 rounded-3xl glass-inset">
           <p class="text-[11px] font-semibold text-surface-400 uppercase tracking-wide mb-1.5">Most loved line</p>
           <p class="text-[13.5px] font-medium text-surface-800 dark:text-surface-100 leading-snug wrap-break-word">"{bestQuoted.text}"</p>
         </div>
@@ -461,28 +461,28 @@
       <p class="text-[13px] text-surface-400 dark:text-surface-500 mb-8">{memberName} hasn't taken the quiz yet.</p>
     {:else}
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1.5 text-brand-500">
             <Trophy size={14} />
             <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{quizStats.quizzesPlayed}</span>
           </div>
           <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Quizzes played</span>
         </div>
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1.5 text-emerald-500">
             <Target size={14} />
             <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{quizStats.accuracy.toFixed(0)}%</span>
           </div>
           <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Accuracy</span>
         </div>
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1.5 text-surface-400">
             <Brain size={14} />
             <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{quizStats.totalCorrect}/{quizStats.totalQuestions}</span>
           </div>
           <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Correct answers</span>
         </div>
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1.5 text-amber-500">
             <Sparkles size={14} />
             <span class="text-[13px] font-extrabold text-surface-900 dark:text-surface-50 truncate">

@@ -273,27 +273,25 @@
   <div class="fixed inset-0 z-100 flex items-center justify-center px-4 py-6 sm:px-5 sm:py-8">
     <button
       type="button"
-      class="absolute inset-0 bg-black/45 backdrop-blur-md animate-[fadeIn_0.18s_ease-out]"
+      class="absolute inset-0 bg-black/30 backdrop-blur-md animate-fade-in"
       onclick={close}
       aria-label="Close"
     ></button>
 
     <div
-      class="relative w-full max-w-md max-h-[88vh] overflow-y-auto overscroll-contain
-             bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl
-             rounded-[28px] shadow-[0_24px_70px_-12px_rgba(0,0,0,0.35)]
-             ring-1 ring-black/5 dark:ring-white/10
+      class="glass-panel relative w-full max-w-md max-h-[88vh] overflow-y-auto overscroll-contain
+             rounded-[28px]
              p-6 sm:p-7
-             animate-[modalIn_0.22s_cubic-bezier(0.16,1,0.3,1)]"
+             animate-modal-in"
     >
       <button
         type="button"
         onclick={close}
         class="absolute top-4 right-4 sm:top-5 sm:right-5
                flex items-center justify-center w-8 h-8 rounded-full
-               text-surface-400 bg-surface-100/80 dark:bg-surface-800/80
-               hover:text-surface-700 hover:bg-surface-200
-               dark:hover:text-surface-200 dark:hover:bg-surface-700
+               text-surface-400 bg-black/[0.04] dark:bg-white/[0.06] backdrop-blur-sm
+               hover:text-surface-700 hover:bg-black/[0.08]
+               dark:hover:text-surface-200 dark:hover:bg-white/[0.1]
                transition-all active:scale-90"
         aria-label="Close"
       >
@@ -323,12 +321,13 @@
                     placeholder="Who said it?"
                     class="w-full h-9 px-3 rounded-xl
                            text-[12.5px] font-medium
-                           bg-surface-100 dark:bg-surface-800
-                           border border-transparent
+                           bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm
+                           border border-black/[0.05] dark:border-white/[0.08]
                            text-surface-900 dark:text-surface-100
                            placeholder-surface-400
                            focus:outline-none
                            focus:ring-2 focus:ring-brand-500/30
+                           focus:bg-white/60 dark:focus:bg-white/[0.08]
                            transition-all"
                   />
 
@@ -345,14 +344,10 @@
 
                     {#if suggestions.length > 0}
                       <div
-                        class="absolute left-0 right-0 top-full mt-1.5 z-30
+                        class="glass-chrome absolute left-0 right-0 top-full mt-1.5 z-30
                                max-h-40 overflow-y-auto overscroll-contain
                                rounded-2xl
-                               bg-white/95 dark:bg-surface-800/95
-                               backdrop-blur-xl
-                               ring-1 ring-black/5 dark:ring-white/10
-                               shadow-[0_16px_40px_-8px_rgba(0,0,0,0.25)]
-                               py-1.5 animate-[dropdownIn_0.14s_ease-out]"
+                               py-1.5 animate-dropdown-in"
                       >
                         {#each suggestions as member (member.id)}
                           <button
@@ -397,12 +392,13 @@
                   rows="2"
                   class="w-full px-3 py-2 rounded-xl
                          text-[13px]
-                         bg-surface-100 dark:bg-surface-800
-                         border border-transparent
+                         bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm
+                         border border-black/[0.05] dark:border-white/[0.08]
                          text-surface-900 dark:text-surface-100
                          placeholder-surface-400
                          focus:outline-none
                          focus:ring-2 focus:ring-brand-500/30
+                         focus:bg-white/60 dark:focus:bg-white/[0.08]
                          transition-all resize-none"
                 ></textarea>
               </div>
@@ -462,11 +458,12 @@
             <div
               class="flex flex-wrap items-center gap-1.5
                      min-h-10 px-3 py-1.5 rounded-2xl
-                     bg-surface-100 dark:bg-surface-800
+                     bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm
+                     border border-black/[0.05] dark:border-white/[0.08]
                      ring-1 ring-transparent
                      focus-within:ring-2
                      focus-within:ring-brand-500/40
-                     focus-within:bg-white dark:focus-within:bg-surface-800
+                     focus-within:bg-white/60 dark:focus-within:bg-white/[0.08]
                      transition-all"
             >
               {#each tags as tag (tag)}
@@ -474,7 +471,7 @@
                   class="flex items-center gap-1
                          text-[11px] font-semibold
                          pl-2 pr-1 py-1 rounded-lg
-                         animate-[tagIn_0.15s_ease-out]"
+                         animate-tag-in"
                   style:color={colorFromString(tag)}
                   style:background-color={`${colorFromString(tag)}1A`}
                 >
@@ -526,14 +523,10 @@
 
               {#if tagSuggestions.length > 0 || tagInput.trim()}
                 <div
-                  class="absolute left-0 right-0 top-full mt-1.5 z-30
+                  class="glass-chrome absolute left-0 right-0 top-full mt-1.5 z-30
                          max-h-48 overflow-y-auto overscroll-contain
                          rounded-2xl
-                         bg-white/95 dark:bg-surface-800/95
-                         backdrop-blur-xl
-                         ring-1 ring-black/5 dark:ring-white/10
-                         shadow-[0_16px_40px_-8px_rgba(0,0,0,0.25)]
-                         py-1.5 animate-[dropdownIn_0.14s_ease-out]"
+                         py-1.5 animate-dropdown-in"
                 >
                   {#each tagSuggestions.slice(0, 8) as suggestion (suggestion)}
                     <div
@@ -669,7 +662,7 @@
           class="w-full h-11 rounded-2xl
                  text-[14px] font-semibold text-white
                  bg-brand-500 hover:bg-brand-600
-                 shadow-sm shadow-brand-500/25
+                 shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_8px_20px_-6px_var(--color-brand-500)]
                  disabled:opacity-40
                  disabled:pointer-events-none
                  active:scale-[0.98]
@@ -681,54 +674,3 @@
     </div>
   </div>
 {/if}
-
-<style>
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes modalIn {
-    from {
-      opacity: 0;
-      transform: scale(0.96) translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  @keyframes tagIn {
-    from {
-      opacity: 0;
-      transform: scale(0.85);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  @keyframes dropdownIn {
-    from {
-      opacity: 0;
-      transform: translateY(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    * {
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-    }
-  }
-</style>

@@ -401,7 +401,7 @@
     </div>
     <p class="text-[13px] text-surface-500 dark:text-surface-400 mt-1 ml-11.5 mb-7">{meta.subtitle}</p>
 
-    <div class="mx-auto max-w-md p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+    <div class="mx-auto max-w-md p-5 rounded-3xl glass">
       
       <div class="flex flex-wrap gap-2 mb-5">
         {#each availableCounts() as n (n)}
@@ -461,7 +461,7 @@
     </div>
 
     <!-- question card -->
-    <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-center mb-5">
+    <div class="p-6 sm:p-8 rounded-3xl glass text-center mb-5">
       {#if q.kind === 'who_said_it'}
         <p class="text-[11px] font-bold text-brand-500 uppercase tracking-wide mb-3">Who said this?</p>
         <p class="text-[17px] sm:text-[19px] font-bold text-surface-900 dark:text-surface-50 leading-snug wrap-break-word">
@@ -553,11 +553,11 @@
       <p class="text-[13.5px] font-medium text-surface-500 dark:text-surface-400 mb-6">{msg.text}</p>
 
       <div class="grid grid-cols-2 gap-3 w-full max-w-xs mb-8">
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{percentScore}%</span>
           <span class="text-[10px] font-medium text-surface-400 uppercase tracking-wide">Accuracy</span>
         </div>
-        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+        <div class="flex flex-col items-center justify-center gap-1 p-4 rounded-3xl glass">
           <div class="flex items-center gap-1 text-orange-500">
             <Flame size={14} fill="currentColor" />
             <span class="text-[18px] font-extrabold text-surface-900 dark:text-surface-50">{bestStreak}</span>
@@ -587,7 +587,7 @@
         <button
           type="button"
           onclick={backToModes}
-          class="flex items-center gap-1.5 h-10 px-4 rounded-2xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 text-[13px] font-semibold hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+          class="flex items-center gap-1.5 h-10 px-4 rounded-2xl glass-inset text-surface-700 dark:text-surface-200 text-[13px] font-semibold hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-colors"
         >
           Try the other mode
         </button>

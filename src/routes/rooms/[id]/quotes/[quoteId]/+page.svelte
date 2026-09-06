@@ -571,7 +571,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
     <!-- Left column: quote card + comment input -->
     <div class="flex flex-col gap-6">
-      <div class="relative flex flex-col gap-5 p-6 sm:p-7 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] dark:shadow-none overflow-hidden">
+      <div class="relative flex flex-col gap-5 p-6 sm:p-7 rounded-3xl glass shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] dark:shadow-none overflow-hidden">
         <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: {accentColor};"></div>
 
         <!-- flex-wrap + gap zodat de NSFW badge en delete-knop nooit overlappen,
@@ -664,7 +664,7 @@
 
               {#if isQuoteOwner && openReactionGroup === group.emoji}
                 <div
-                  class="absolute left-0 bottom-full mb-2 w-52 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-lg p-2 z-20"
+                  class="absolute left-0 bottom-full mb-2 w-52 max-h-64 overflow-y-auto rounded-2xl glass-panel p-2 z-20"
                 >
                   <p class="px-2 pt-1 pb-2 text-[10.5px] font-bold text-surface-400 dark:text-surface-500 uppercase tracking-wide">
                     Reacted {group.emoji}
@@ -759,7 +759,7 @@
 
             {#if isQuoteOwner && showFavoritesList}
               <div
-                class="absolute right-0 bottom-full mb-2 w-56 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-lg p-2 z-20"
+                class="absolute right-0 bottom-full mb-2 w-56 max-h-64 overflow-y-auto rounded-2xl glass-panel p-2 z-20"
               >
                 <p class="px-2 pt-1 pb-2 text-[10.5px] font-bold text-surface-400 dark:text-surface-500 uppercase tracking-wide">
                   Liked by
@@ -803,7 +803,7 @@
             placeholder="Write a comment…"
             rows="2"
             disabled={submittingComment}
-            class="flex-1 resize-none text-[14px] px-3.5 py-2.5 rounded-2xl bg-surface-100 dark:bg-surface-800 border border-transparent focus:border-surface-300 dark:focus:border-surface-600 outline-none text-surface-800 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-colors"
+            class="flex-1 resize-none text-[14px] px-3.5 py-2.5 rounded-2xl glass-inset border border-transparent focus:border-surface-300 dark:focus:border-surface-600 outline-none text-surface-800 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-colors"
             onkeydown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -844,7 +844,7 @@
       {:else}
         <div class="flex flex-col gap-3 max-h-[70vh] overflow-y-auto -mr-2 pr-2">
           {#each topLevelComments as comment (comment.id)}
-            <div class="flex flex-col gap-2 p-3.5 rounded-2xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+            <div class="flex flex-col gap-2 p-3.5 rounded-2xl glass">
               <!-- Top-level comment -->
               <div class="flex items-start gap-2.5">
                 <div
@@ -991,7 +991,7 @@
                         placeholder="Write a reply…"
                         rows="1"
                         disabled={submittingReply}
-                        class="flex-1 resize-none text-[12.5px] px-3 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 border border-transparent focus:border-surface-300 dark:focus:border-surface-600 outline-none text-surface-800 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-colors"
+                        class="flex-1 resize-none text-[12.5px] px-3 py-2 rounded-xl glass-inset border border-transparent focus:border-surface-300 dark:focus:border-surface-600 outline-none text-surface-800 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-colors"
                         onkeydown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();

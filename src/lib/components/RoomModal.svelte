@@ -97,9 +97,13 @@
 
 {#if open}
   <div class="fixed inset-0 z-100 flex items-center justify-center px-5">
-    <button class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick={close} aria-label="Close"></button>
+    <button
+      class="absolute inset-0 bg-black/30 backdrop-blur-md animate-fade-in"
+      onclick={close}
+      aria-label="Close"
+    ></button>
 
-    <div class="relative w-full max-w-sm bg-white dark:bg-surface-900 rounded-3xl shadow-2xl p-6">
+    <div class="glass-panel relative w-full max-w-sm rounded-3xl p-6 animate-modal-in">
       <button
         onclick={close}
         class="absolute top-4 right-4 text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
@@ -115,16 +119,16 @@
         {tab === 'create' ? 'Start a new quote stash for your group' : 'Enter the 6-character code'}
       </p>
 
-      <div class="flex items-center gap-1 bg-surface-100 dark:bg-surface-800 rounded-2xl p-1 mb-5">
+      <div class="flex items-center gap-1 bg-black/[0.03] dark:bg-white/[0.04] backdrop-blur-sm rounded-2xl p-1 mb-5 border border-black/[0.04] dark:border-white/[0.06]">
         <button
           onclick={() => (tab = 'create')}
-          class="flex-1 h-9 rounded-xl text-[13px] font-semibold transition-colors {tab === 'create' ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 dark:text-surface-400'}"
+          class="flex-1 h-9 rounded-xl text-[13px] font-semibold transition-all {tab === 'create' ? 'bg-white/80 dark:bg-white/10 text-surface-900 dark:text-white shadow-sm backdrop-blur-sm' : 'text-surface-500 dark:text-surface-400'}"
         >
           Create
         </button>
         <button
           onclick={() => (tab = 'join')}
-          class="flex-1 h-9 rounded-xl text-[13px] font-semibold transition-colors {tab === 'join' ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 dark:text-surface-400'}"
+          class="flex-1 h-9 rounded-xl text-[13px] font-semibold transition-all {tab === 'join' ? 'bg-white/80 dark:bg-white/10 text-surface-900 dark:text-white shadow-sm backdrop-blur-sm' : 'text-surface-500 dark:text-surface-400'}"
         >
           Join
         </button>
@@ -140,7 +144,7 @@
               required
               bind:value={roomName}
               placeholder="Team Legends"
-              class="w-full h-11 px-4 rounded-2xl text-[14px] bg-surface-100 dark:bg-surface-800 border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+              class="w-full h-11 px-4 rounded-2xl text-[14px] bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-white/60 dark:focus:bg-white/[0.08] transition-all"
             />
           </div>
 
@@ -151,7 +155,7 @@
           <button
             type="submit"
             disabled={loading || !roomName.trim()}
-            class="w-full h-11 rounded-2xl text-[14px] font-semibold text-white bg-brand-500 hover:bg-brand-600 shadow-sm shadow-brand-500/25 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            class="w-full h-11 rounded-2xl text-[14px] font-semibold text-white bg-brand-500 hover:bg-brand-600 shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_8px_20px_-6px_var(--color-brand-500)] disabled:opacity-40 disabled:pointer-events-none transition-all"
           >
             {loading ? 'Creating…' : 'Create room'}
           </button>
@@ -167,7 +171,7 @@
               maxlength="6"
               bind:value={joinCode}
               placeholder="A1B2C3"
-              class="w-full h-11 px-4 rounded-2xl text-[14px] font-mono tracking-widest uppercase bg-surface-100 dark:bg-surface-800 border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+              class="w-full h-11 px-4 rounded-2xl text-[14px] font-mono tracking-widest uppercase bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-white/60 dark:focus:bg-white/[0.08] transition-all"
             />
           </div>
 
@@ -178,7 +182,7 @@
           <button
             type="submit"
             disabled={loading || !joinCode.trim()}
-            class="w-full h-11 rounded-2xl text-[14px] font-semibold text-white bg-brand-500 hover:bg-brand-600 shadow-sm shadow-brand-500/25 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            class="w-full h-11 rounded-2xl text-[14px] font-semibold text-white bg-brand-500 hover:bg-brand-600 shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_8px_20px_-6px_var(--color-brand-500)] disabled:opacity-40 disabled:pointer-events-none transition-all"
           >
             {loading ? 'Joining…' : 'Join room'}
           </button>

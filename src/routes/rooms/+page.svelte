@@ -80,7 +80,8 @@
   <title>Your Stashes · QuoteStash</title>
 </svelte:head>
 
-<div class="min-h-screen px-5 py-16 sm:py-20">
+<div class="min-h-screen px-5 py-16 sm:py-20 relative">
+  <div class="app-ambient blobs-rooms"></div>
   <div class="mx-auto w-full max-w-3xl">
     <div class="flex items-center justify-between mb-8">
       <div>
@@ -90,7 +91,7 @@
 
       <button
         onclick={() => (modalOpen = true)}
-        class="flex items-center gap-1.5 h-10 px-4 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white text-[13px] font-semibold shadow-sm shadow-brand-500/25 transition-colors"
+        class="flex items-center gap-1.5 h-10 px-4 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white text-[13px] font-semibold shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_8px_20px_-6px_var(--color-brand-500)] transition-all"
       >
         <Plus size={16} strokeWidth={2.5} />
         New room
@@ -99,18 +100,18 @@
 
     {#if !loading && rooms.length > 0}
       <div class="relative mb-6">
-        <Search size={16} class="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+        <Search size={16} class="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none z-50" />
         <input
           type="text"
           bind:value={searchQuery}
           placeholder="Search your stashes…"
-          class="w-full h-11 pl-11 pr-10 rounded-2xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-[13.5px] text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
+          class="w-full h-11 pl-11 pr-10 rounded-2xl bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-[13.5px] text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:bg-white/60 dark:focus:bg-white/[0.08] transition-all"
         />
         {#if searchQuery}
           <button
             onclick={() => (searchQuery = '')}
             aria-label="Clear search"
-            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-full text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-full text-surface-400 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-colors"
           >
             <X size={13} />
           </button>
@@ -121,7 +122,7 @@
     {#if loading}
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {#each Array(4) as _}
-          <div class="h-32 rounded-3xl bg-surface-100 dark:bg-surface-900 animate-pulse"></div>
+          <div class="h-32 rounded-3xl bg-black/[0.03] dark:bg-white/[0.04] animate-pulse"></div>
         {/each}
       </div>
     {:else if rooms.length > 0}

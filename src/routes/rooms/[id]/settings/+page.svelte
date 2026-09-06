@@ -10,7 +10,16 @@
     RefreshCw,
     Loader2,
     Trash2,
-    ShieldAlert
+    ShieldAlert,
+    ScrollText,
+    Quote as QuoteIcon,
+    MessageCircle,
+    CornerDownRight,
+    Heart,
+    Star,
+    Sparkles,
+    Brain,
+    Search
   } from 'lucide-svelte';
   import type { Database } from '$lib/database.types';
 
@@ -18,8 +27,11 @@
 
   const roomId = $derived(page.params.id!);
 
+  let activeTab = $state<'general' | 'audit'>('general');
+
   let loading = $state(true);
   let notAuthorized = $state(false);
+
 
   let room = $state<Room | null>(null);
   let nameDraft = $state('');
@@ -67,7 +79,250 @@
     room = data;
     nameDraft = data.name;
     loading = false;
+
+    loadAuditLog();
   }
+
+  // ---------------------------------------------------------------- //
+  // Audit log — a complete, owner-only history of everything that's   //
+  // happened in the room, assembled from every source table (quotes,  //
+  // comments, favorites, likes, reactions, quiz results) rather than  //
+  // the per-recipient notifications feed used on the dashboard.       //
+  // ---------------------------------------------------------------- //
+
+  type AuditType =
+    | 'quote_added'
+    | 'comment_added'
+    | 'reply_added'
+    | 'quote_favorited'
+    | 'comment_liked'
+    | 'quote_reacted'
+    | 'quiz_completed';
+
+  type AuditEvent = {
+    id: string;
+    type: AuditType;
+    actorName: string;
+    createdAt: string;
+    description: string;
+    preview: string | null;
+    href: string;
+  };
+
+  const AUDIT_ICON: Record<AuditType, any> = {
+    quote_added: QuoteIcon,
+    comment_added: MessageCircle,
+    reply_added: CornerDownRight,
+    quote_favorited: Star,
+    comment_liked: Heart,
+    quote_reacted: Sparkles,
+    quiz_completed: Brain
+  };
+
+  const AUDIT_ICON_COLOR: Record<AuditType, string> = {
+    quote_added: 'text-brand-500',
+    comment_added: 'text-brand-500',
+    reply_added: 'text-brand-500',
+    quote_favorited: 'text-amber-500',
+    comment_liked: 'text-red-500',
+    quote_reacted: 'text-fuchsia-500',
+    quiz_completed: 'text-emerald-500'
+  };
+
+  const AUDIT_FILTERS: { id: AuditType | 'all'; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'quote_added', label: 'Quotes' },
+    { id: 'comment_added', label: 'Comments' },
+    { id: 'quote_favorited', label: 'Favorites' },
+    { id: 'quote_reacted', label: 'Reactions' },
+    { id: 'quiz_completed', label: 'Quizzes' }
+  ];
+
+  let auditLoading = $state(true);
+  let auditEvents = $state<AuditEvent[]>([]);
+  let auditFilter = $state<AuditType | 'all'>('all');
+  let auditSearch = $state('');
+  let auditVisibleCount = $state(40);
+
+  const filteredAuditEvents = $derived.by(() => {
+    const query = auditSearch.trim().toLowerCase();
+    return auditEvents.filter((e) => {
+      if (auditFilter !== 'all' && e.type !== auditFilter) return false;
+      if (!query) return true;
+      return (
+        e.actorName.toLowerCase().includes(query) ||
+        e.description.toLowerCase().includes(query) ||
+        (e.preview?.toLowerCase().includes(query) ?? false)
+      );
+    });
+  });
+
+  const visibleAuditEvents = $derived(filteredAuditEvents.slice(0, auditVisibleCount));
+
+  async function loadAuditLog() {
+    auditLoading = true;
+
+    const { data: quotesData, error: quotesError } = await supabase
+      .from('quotes')
+      .select('id, lines, created_at, added_by, adder:users!quotes_added_by_fkey(first_name)')
+      .eq('room_id', roomId);
+
+    if (quotesError) console.error('audit: quotes load error', quotesError);
+
+    const quotes = ((quotesData ?? []) as any[]).map((q) => ({
+      ...q,
+      adder: Array.isArray(q.adder) ? q.adder[0] : q.adder
+    }));
+    const quoteIds = quotes.map((q) => q.id);
+    const quotePreview = new Map(
+      quotes.map((q) => [q.id, q.lines?.[0]?.text as string | undefined])
+    );
+
+    const events: AuditEvent[] = quotes.map((q) => ({
+      id: `quote:${q.id}`,
+      type: 'quote_added',
+      actorName: q.adder?.first_name ?? 'Someone',
+      createdAt: q.created_at,
+      description: 'added a new quote',
+      preview: quotePreview.get(q.id) ?? null,
+      href: `/rooms/${roomId}/quotes/${q.id}`
+    }));
+
+    let commentIdToQuoteId = new Map<string, string>();
+
+    if (quoteIds.length > 0) {
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('quote_comments')
+        .select('id, quote_id, parent_comment_id, text, created_at, user:users!quote_comments_user_id_fkey(first_name)')
+        .in('quote_id', quoteIds);
+
+      if (commentsError) console.error('audit: comments load error', commentsError);
+
+      for (const row of (commentsData ?? []) as any[]) {
+        const user = Array.isArray(row.user) ? row.user[0] : row.user;
+        commentIdToQuoteId.set(row.id, row.quote_id);
+        events.push({
+          id: `comment:${row.id}`,
+          type: row.parent_comment_id ? 'reply_added' : 'comment_added',
+          actorName: user?.first_name ?? 'Someone',
+          createdAt: row.created_at,
+          description: row.parent_comment_id ? 'replied to a comment' : 'commented on a quote',
+          preview: row.text ?? null,
+          href: `/rooms/${roomId}/quotes/${row.quote_id}`
+        });
+      }
+
+      const { data: favoritesData, error: favoritesError } = await supabase
+        .from('quote_favorites')
+        .select('quote_id, created_at, user:users!quote_favorites_user_id_fkey(first_name)')
+        .in('quote_id', quoteIds);
+
+      if (favoritesError) console.error('audit: favorites load error', favoritesError);
+
+      for (const row of (favoritesData ?? []) as any[]) {
+        const user = Array.isArray(row.user) ? row.user[0] : row.user;
+        events.push({
+          id: `favorite:${row.quote_id}:${user?.first_name}:${row.created_at}`,
+          type: 'quote_favorited',
+          actorName: user?.first_name ?? 'Someone',
+          createdAt: row.created_at,
+          description: 'favorited a quote',
+          preview: quotePreview.get(row.quote_id) ?? null,
+          href: `/rooms/${roomId}/quotes/${row.quote_id}`
+        });
+      }
+
+      const { data: reactionsData, error: reactionsError } = await supabase
+        .from('quote_reactions')
+        .select('id, quote_id, emoji, created_at, user:users!quote_reactions_user_id_fkey(first_name)')
+        .in('quote_id', quoteIds);
+
+      if (reactionsError) console.error('audit: reactions load error', reactionsError);
+
+      for (const row of (reactionsData ?? []) as any[]) {
+        const user = Array.isArray(row.user) ? row.user[0] : row.user;
+        events.push({
+          id: `reaction:${row.id}`,
+          type: 'quote_reacted',
+          actorName: user?.first_name ?? 'Someone',
+          createdAt: row.created_at,
+          description: `reacted ${row.emoji ?? ''} to a quote`,
+          preview: quotePreview.get(row.quote_id) ?? null,
+          href: `/rooms/${roomId}/quotes/${row.quote_id}`
+        });
+      }
+
+      const commentIds = Array.from(commentIdToQuoteId.keys());
+
+      if (commentIds.length > 0) {
+        const { data: likesData, error: likesError } = await supabase
+          .from('comment_likes')
+          .select('comment_id, created_at, user:users!comment_likes_user_id_fkey(first_name)')
+          .in('comment_id', commentIds);
+
+        if (likesError) console.error('audit: comment likes load error', likesError);
+
+        for (const row of (likesData ?? []) as any[]) {
+          const user = Array.isArray(row.user) ? row.user[0] : row.user;
+          const quoteId = commentIdToQuoteId.get(row.comment_id);
+          events.push({
+            id: `like:${row.comment_id}:${user?.first_name}:${row.created_at}`,
+            type: 'comment_liked',
+            actorName: user?.first_name ?? 'Someone',
+            createdAt: row.created_at,
+            description: 'liked a comment',
+            preview: null,
+            href: quoteId ? `/rooms/${roomId}/quotes/${quoteId}` : `/rooms/${roomId}/quotes`
+          });
+        }
+      }
+    }
+
+    const { data: quizData, error: quizError } = await supabase
+      .from('quiz_results')
+      .select('id, mode, correct_count, total_count, created_at, user:users!quiz_results_user_id_fkey(first_name)')
+      .eq('room_id', roomId);
+
+    if (quizError) console.error('audit: quiz results load error', quizError);
+
+    for (const row of (quizData ?? []) as any[]) {
+      const user = Array.isArray(row.user) ? row.user[0] : row.user;
+      events.push({
+        id: `quiz:${row.id}`,
+        type: 'quiz_completed',
+        actorName: user?.first_name ?? 'Someone',
+        createdAt: row.created_at,
+        description: `completed a ${row.mode === 'who_said_it' ? "'Who said it'" : "'Fact or fluff'"} quiz (${row.correct_count}/${row.total_count})`,
+        preview: null,
+        href: `/rooms/${roomId}/leaderboard`
+      });
+    }
+
+    events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    auditEvents = events;
+    auditLoading = false;
+  }
+
+  function formatAuditTime(iso: string): string {
+    const date = new Date(iso);
+    const diffMs = Date.now() - date.getTime();
+    const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+
+    if (diffSec < 60) return 'just now';
+
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 7) return `${diffDay}d ago`;
+
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
 
   async function saveName() {
     if (!room || !nameDirty || savingName) return;
@@ -164,9 +419,34 @@
       Manage {room.name}
     </p>
 
-    <div class="mt-6 flex flex-col gap-4">
+    <!-- Tabs -->
+    <div class="flex items-center gap-1 mt-6 mb-6 p-1 rounded-2xl glass-chrome w-fit max-w-full overflow-x-auto">
+      <button
+        type="button"
+        onclick={() => (activeTab = 'general')}
+        class="flex items-center gap-1.5 px-3.5 sm:px-4 h-9 rounded-xl text-[12.5px] font-semibold whitespace-nowrap transition-all shrink-0 {activeTab === 'general'
+          ? 'bg-white dark:bg-surface-950 text-brand-500 shadow-sm'
+          : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'}"
+      >
+        <Settings size={14} strokeWidth={2.3} />
+        General
+      </button>
+      <button
+        type="button"
+        onclick={() => (activeTab = 'audit')}
+        class="flex items-center gap-1.5 px-3.5 sm:px-4 h-9 rounded-xl text-[12.5px] font-semibold whitespace-nowrap transition-all shrink-0 {activeTab === 'audit'
+          ? 'bg-white dark:bg-surface-950 text-brand-500 shadow-sm'
+          : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200'}"
+      >
+        <ScrollText size={14} strokeWidth={2.3} />
+        Audit log
+      </button>
+    </div>
+
+    {#if activeTab === 'general'}
+    <div class="flex flex-col gap-4">
       <!-- General -->
-      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="p-5 rounded-3xl glass">
         <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4">
           General
         </h2>
@@ -200,7 +480,7 @@
       </div>
 
       <!-- Room code -->
-      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="p-5 rounded-3xl glass">
         <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-1">
           Room code
         </h2>
@@ -304,5 +584,101 @@
         {/if}
       </div>
     </div>
+    {:else}
+      <!-- Audit log -->
+      <div class="flex flex-col gap-3.5">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+          <div class="relative flex-1">
+            <Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+            <input
+              type="text"
+              bind:value={auditSearch}
+              placeholder="Search by name or content…"
+              class="w-full h-9 pl-9 pr-3 rounded-xl text-[12.5px] glass-inset border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
+            />
+          </div>
+          <div class="flex items-center gap-1 flex-wrap">
+            {#each AUDIT_FILTERS as filter (filter.id)}
+              <button
+                type="button"
+                onclick={() => (auditFilter = filter.id)}
+                class="h-8 px-3 rounded-lg text-[11.5px] font-semibold whitespace-nowrap transition-colors {auditFilter === filter.id
+                  ? 'bg-brand-500/10 text-brand-500'
+                  : 'glass-inset text-surface-600 dark:text-surface-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08]'}"
+              >
+                {filter.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        {#if auditLoading}
+          <div class="flex flex-col gap-2">
+            {#each Array(6) as _}
+              <div class="h-12 rounded-2xl bg-surface-100 dark:bg-surface-900 animate-pulse"></div>
+            {/each}
+          </div>
+        {:else if filteredAuditEvents.length === 0}
+          <div class="flex flex-col items-center justify-center py-16 text-center px-4 rounded-3xl glass">
+            <ScrollText size={26} class="text-surface-300 dark:text-surface-700 mb-3" />
+            <p class="text-[13.5px] font-medium text-surface-500 dark:text-surface-400">
+              {auditEvents.length === 0 ? 'Nothing has happened in this room yet.' : 'No events match your filters.'}
+            </p>
+          </div>
+        {:else}
+          <div class="p-3 sm:p-4 rounded-3xl glass">
+            <div class="flex flex-col gap-1">
+              {#each visibleAuditEvents as event (event.id)}
+                <a
+                  href={event.href}
+                  class="flex items-start gap-3 py-2.5 px-2 -mx-2 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors"
+                >
+                  <div
+                    class="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl {AUDIT_ICON_COLOR[event.type]} glass-inset mt-0.5"
+                  >
+                    <!-- svelte-ignore svelte_component_deprecated -->
+                    <svelte:component this={AUDIT_ICON[event.type]} size={14} strokeWidth={2.25} />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[12.5px] text-surface-600 dark:text-surface-300">
+                      <span class="font-semibold text-surface-800 dark:text-surface-100">{event.actorName}</span>
+                      {event.description}
+                    </p>
+                    {#if event.preview}
+                      <p class="text-[11.5px] text-surface-400 dark:text-surface-500 truncate mt-0.5">
+                        "{event.preview}"
+                      </p>
+                    {/if}
+                  </div>
+                  <span
+                    class="shrink-0 text-[10.5px] text-surface-400 dark:text-surface-500 mt-0.5"
+                    title={new Date(event.createdAt).toLocaleString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })}
+                  >
+                    {formatAuditTime(event.createdAt)}
+                  </span>
+                </a>
+              {/each}
+            </div>
+
+            {#if filteredAuditEvents.length > auditVisibleCount}
+              <div class="flex justify-center pt-3 mt-2 border-t border-black/[0.05] dark:border-white/[0.06]">
+                <button
+                  type="button"
+                  onclick={() => (auditVisibleCount += 40)}
+                  class="h-8 px-4 rounded-lg text-[11.5px] font-semibold glass-inset text-surface-600 dark:text-surface-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-colors"
+                >
+                  Show more
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
   {/if}
 </div>

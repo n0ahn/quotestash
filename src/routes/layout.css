@@ -44,12 +44,83 @@
 /* Manual dark mode: toggled via the .dark class on <html> (see +layout.svelte) */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ---------------------------------------------------------------- */
+/* Semantic (shadcn-style) tokens — mapped onto brand/accent/surface */
+/*                                                                    */
+/* IMPORTANT: the actual values live in PLAIN custom properties      */
+/* (--background, --border, --ring, ...) declared in :root/:root.dark */
+/* below, NOT inside an @theme block. @theme inline resolves var()   */
+/* chains down to their source at build time, so if these values     */
+/* pointed straight at another --color-* theme token (e.g.           */
+/* --color-input: var(--color-surface-200)), Tailwind would bake     */
+/* "var(--color-surface-200)" directly into every utility it         */
+/* generates — including opacity-modifier ones like bg-input/30 and  */
+/* dark: variants. That permanently ignores the dark-mode override   */
+/* of --color-input, since nothing compiled ever references it again. */
+/* Routing through a plain, non-namespaced variable first is what    */
+/* keeps utilities pointing at `var(--border)` etc., so cascade      */
+/* overrides (dark mode) and opacity modifiers both keep working.    */
+/* ---------------------------------------------------------------- */
+
 :root {
 	color-scheme: light;
+
+	--background: var(--color-surface-50);
+	--foreground: var(--color-surface-900);
+	--primary: var(--color-brand-500);
+	--primary-foreground: white;
+	--secondary: var(--color-accent-100);
+	--secondary-foreground: var(--color-accent-800);
+	--muted: var(--color-surface-100);
+	--muted-foreground: var(--color-surface-500);
+	--accent: var(--color-accent-500);
+	--accent-foreground: white;
+	--destructive: #ef4444;
+	--destructive-foreground: white;
+	--border: var(--color-surface-200);
+	--input: var(--color-surface-200);
+	--ring: var(--color-brand-400);
 }
 
 :root.dark {
 	color-scheme: dark;
+
+	--background: var(--color-surface-950);
+	--foreground: var(--color-surface-50);
+	--primary: var(--color-brand-500);
+	--primary-foreground: white;
+	--secondary: color-mix(in oklab, var(--color-accent-500) 18%, transparent);
+	--secondary-foreground: var(--color-accent-300);
+	--muted: color-mix(in oklab, white 6%, var(--color-surface-900));
+	--muted-foreground: var(--color-surface-400);
+	--accent: var(--color-accent-500);
+	--accent-foreground: var(--color-surface-950);
+	--destructive: #ef4444;
+	--destructive-foreground: white;
+	--border: color-mix(in oklab, white 12%, transparent);
+	--input: color-mix(in oklab, white 12%, transparent);
+	--ring: var(--color-brand-400);
+}
+
+/* Map the plain semantic variables above into Tailwind's theme namespace.
+   Each entry stays a single hop (var(--background), etc.) so nothing gets
+   inlined further — dark-mode overrides and /NN opacity modifiers both work. */
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
 }
 
 html,
@@ -66,6 +137,8 @@ body {
 
 /* ---------------------------------------------------------------- */
 /* Ambient background — gradient blobs die achter het glas doorschemeren */
+/* Gebruik .app-ambient als vaste basis, met optionele losse .blob    */
+/* elementen erin zodat elke sectie/pagina eigen accenten kan tonen.  */
 /* ---------------------------------------------------------------- */
 
 .app-ambient {
@@ -76,92 +149,182 @@ body {
 	pointer-events: none;
 }
 
-.app-ambient::before,
-.app-ambient::after,
-.app-ambient .blob-3 {
+.app-ambient .blob {
+	position: absolute;
+	border-radius: 9999px;
+	filter: blur(140px);
+	opacity: 0.18;
+}
+
+.dark .app-ambient .blob {
+	opacity: 0.24;
+}
+
+/* Default (fallback) duo: paars + amber — dekt pagina's zonder eigen blobs */
+.app-ambient.default-blobs::before,
+.app-ambient.default-blobs::after {
 	content: '';
 	position: absolute;
 	border-radius: 9999px;
-	filter: blur(90px);
-	opacity: 0.35;
+	filter: blur(140px);
+	opacity: 0.18;
 }
 
-.app-ambient::before {
-	top: -10%;
-	left: -8%;
-	width: 42vw;
-	height: 42vw;
+.app-ambient.default-blobs::before {
+	top: -25%;
+	left: -20%;
+	width: 65vw;
+	height: 65vw;
 	background: radial-gradient(circle, var(--color-brand-500), transparent 70%);
 }
 
-.app-ambient::after {
-	bottom: -15%;
-	right: -10%;
-	width: 46vw;
-	height: 46vw;
+.app-ambient.default-blobs::after {
+	bottom: -30%;
+	right: -22%;
+	width: 70vw;
+	height: 70vw;
 	background: radial-gradient(circle, var(--color-accent-500), transparent 70%);
-	opacity: 0.28;
 }
 
-.dark .app-ambient::before,
-.dark .app-ambient::after {
-	opacity: 0.4;
+.dark .app-ambient.default-blobs::before,
+.dark .app-ambient.default-blobs::after {
+	opacity: 0.24;
+}
+
+/* Sectie-specifieke accent-duo's — geef .app-ambient een van deze classes
+   i.p.v. .default-blobs om per pagina een ander kleuraccent te tonen.
+   Structuur: twee blobs, top-left en bottom-right. */
+
+.app-ambient.blobs-rooms::before,
+.app-ambient.blobs-rooms::after {
+	content: '';
+	position: absolute;
+	border-radius: 9999px;
+	filter: blur(140px);
+	opacity: 0.18;
+}
+.app-ambient.blobs-rooms::before {
+	top: -25%; left: -20%; width: 65vw; height: 65vw;
+	background: radial-gradient(circle, var(--color-brand-500), transparent 70%);
+}
+.app-ambient.blobs-rooms::after {
+	bottom: -30%; right: -22%; width: 70vw; height: 70vw;
+	background: radial-gradient(circle, #22c55e, transparent 70%);
+}
+
+.app-ambient.blobs-quotes::before,
+.app-ambient.blobs-quotes::after {
+	content: '';
+	position: absolute;
+	border-radius: 9999px;
+	filter: blur(140px);
+	opacity: 0.18;
+}
+.app-ambient.blobs-quotes::before {
+	top: -28%; right: -18%; width: 68vw; height: 68vw;
+	background: radial-gradient(circle, var(--color-accent-500), transparent 70%);
+}
+.app-ambient.blobs-quotes::after {
+	bottom: -32%; left: -20%; width: 62vw; height: 62vw;
+	background: radial-gradient(circle, #ec4899, transparent 70%);
+}
+
+.app-ambient.blobs-profile::before,
+.app-ambient.blobs-profile::after {
+	content: '';
+	position: absolute;
+	border-radius: 9999px;
+	filter: blur(140px);
+	opacity: 0.18;
+}
+.app-ambient.blobs-profile::before {
+	top: -22%; left: -20%; width: 62vw; height: 62vw;
+	background: radial-gradient(circle, #38bdf8, transparent 70%);
+}
+.app-ambient.blobs-profile::after {
+	bottom: -26%; right: -18%; width: 66vw; height: 66vw;
+	background: radial-gradient(circle, var(--color-brand-500), transparent 70%);
+}
+
+.dark .app-ambient.blobs-rooms::before,
+.dark .app-ambient.blobs-rooms::after,
+.dark .app-ambient.blobs-quotes::before,
+.dark .app-ambient.blobs-quotes::after,
+.dark .app-ambient.blobs-profile::before,
+.dark .app-ambient.blobs-profile::after {
+	opacity: 0.24;
 }
 
 /* ---------------------------------------------------------------- */
-/* Glass utilities — herbruikbaar op panels, modals, cards, dropdowns */
+/* Glass utilities — neutraal, geen kleurtint. Kleur komt van de     */
+/* ambient blobs die er doorheen schemeren, niet van de panels zelf. */
+/*                                                                    */
+/* IMPORTANT: these live inside @layer components (not as plain,      */
+/* unlayered rules). CSS cascade layers always rank unlayered styles  */
+/* above ANY layered style, regardless of specificity — so if these   */
+/* classes were unlayered, their own bg-white/80 etc. would always    */
+/* beat Tailwind's hover:/dark: utilities (which live in               */
+/* @layer utilities), making hover states on glass-chrome buttons     */
+/* (search, notifications, profile, ...) silently do nothing. Putting */
+/* them in @layer components ranks them BELOW @layer utilities, so    */
+/* hover:/dark: modifiers on these elements work as expected.         */
 /* ---------------------------------------------------------------- */
 
-.glass {
-	@apply border border-white/40 bg-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-surface-900/50;
-	box-shadow:
-		0 1px 0 0 rgba(255, 255, 255, 0.4) inset,
-		0 8px 32px -8px rgba(24, 24, 27, 0.18);
-}
+@layer components {
+	.glass {
+		@apply border border-black/[0.06] bg-white/20 backdrop-blur-xl dark:border-white/[0.08] dark:bg-surface-900/18;
+		box-shadow:
+			0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
+			0 8px 32px -12px rgba(24, 24, 27, 0.14);
+	}
 
-.dark .glass {
-	box-shadow:
-		0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-		0 8px 32px -8px rgba(0, 0, 0, 0.55);
-}
+	.dark .glass {
+		box-shadow:
+			0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+			0 8px 32px -12px rgba(0, 0, 0, 0.5);
+	}
 
-/* Stronger blur/opacity variant for modals & overlays that sit above content */
-.glass-panel {
-	@apply border border-white/50 bg-white/70 backdrop-blur-2xl dark:border-white/10 dark:bg-surface-900/70;
-	box-shadow:
-		0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
-		0 24px 64px -16px rgba(24, 24, 27, 0.28);
-}
+	.glass:hover {
+		box-shadow:
+			0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
+			0 12px 40px -10px rgba(24, 24, 27, 0.16);
+	}
 
-.dark .glass-panel {
-	box-shadow:
-		0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
-		0 24px 64px -16px rgba(0, 0, 0, 0.65);
-}
+	.dark .glass:hover {
+		box-shadow:
+			0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+			0 12px 40px -10px rgba(0, 0, 0, 0.6);
+	}
 
-/* Lighter touch — dropdowns, tooltips, small floating chrome */
-.glass-chrome {
-	@apply border border-white/40 bg-white/75 backdrop-blur-lg dark:border-white/10 dark:bg-surface-900/60;
-	box-shadow: 0 4px 24px -8px rgba(24, 24, 27, 0.16);
-}
+	/* Stronger blur/opacity variant for modals & overlays that sit above content */
+	.glass-panel {
+		@apply border border-black/[0.06] bg-white/45 backdrop-blur-2xl dark:border-white/[0.08] dark:bg-surface-900/40;
+		box-shadow:
+			0 1px 0 0 rgba(255, 255, 255, 0.55) inset,
+			0 24px 64px -16px rgba(24, 24, 27, 0.22);
+	}
 
-.dark .glass-chrome {
-	box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.5);
-}
+	.dark .glass-panel {
+		box-shadow:
+			0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+			0 24px 64px -16px rgba(0, 0, 0, 0.65);
+	}
 
-/* Warm amber glow for hover/focus/active accents on glass elements */
-.glow-accent {
-	transition:
-		box-shadow 0.25s ease,
-		transform 0.25s ease;
-}
+	/* Lighter touch — dropdowns, tooltips, small floating chrome */
+	.glass-chrome {
+		@apply border border-black/[0.06] bg-white/80 backdrop-blur-lg dark:border-white/[0.08] dark:bg-surface-900/65;
+		box-shadow: 0 4px 24px -8px rgba(24, 24, 27, 0.14);
+	}
 
-.glow-accent:hover {
-	box-shadow: 0 0 0 1px var(--color-accent-400) inset, 0 0 24px -4px var(--color-accent-500);
-}
+	.dark .glass-chrome {
+		box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.45);
+	}
 
-.glow-brand:hover {
-	box-shadow: 0 0 0 1px var(--color-brand-400) inset, 0 0 24px -4px var(--color-brand-500);
+	/* Nested frosted surface — chips/stat-boxes sitting inside an outer glass panel.
+	   No border/shadow of its own so it doesn't compete with the parent glass. */
+	.glass-inset {
+		@apply bg-black/[0.03] backdrop-blur-md dark:bg-white/[0.05];
+	}
 }
 
 /* Subtle premium scrollbar */
@@ -180,4 +343,65 @@ body {
 
 ::selection {
 	@apply bg-brand-200 text-brand-900 dark:bg-brand-800 dark:text-brand-50;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(14px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes tagIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes paletteIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@theme {
+  --animate-fade-in: fadeIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-modal-in: modalIn 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-tag-in: tagIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-dropdown-in: dropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-palette-in: paletteIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }

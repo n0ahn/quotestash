@@ -162,7 +162,7 @@
         type="text"
         bind:value={searchQuery}
         placeholder="Search members..."
-        class="w-full h-11 pl-11 pr-4 rounded-2xl text-[13.5px] bg-surface-100 dark:bg-surface-800 border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
+        class="w-full h-11 pl-11 pr-4 rounded-2xl text-[13.5px] glass-inset border border-transparent text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
       />
     </div>
   {/if}
@@ -181,7 +181,7 @@
     {:else}
       {#each filteredMembers as member (member.id)}
         {@const memberIsOwner = member.id === ownerId}
-        <div class="group relative flex items-center gap-3 p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200">
+        <div class="group relative flex items-center gap-3 p-3.5 sm:p-4 rounded-3xl glass hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200">
           <a
             href="/rooms/{roomId}/members/{member.id}"
             class="flex items-center gap-3 flex-1 min-w-0"

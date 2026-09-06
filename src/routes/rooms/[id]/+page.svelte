@@ -85,6 +85,25 @@
     return `/rooms/${roomId}/quotes`;
   }
 
+  function formatRelativeTime(iso: string): string {
+    const date = new Date(iso);
+    const diffMs = Date.now() - date.getTime();
+    const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+
+    if (diffSec < 60) return 'just now';
+
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 7) return `${diffDay}d ago`;
+
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
   function colorFromString(str: string): string {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -413,7 +432,7 @@
     </div>
 
     <!-- Activity chart -->
-    <div class="mt-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+    <div class="mt-4 p-5 sm:p-6 rounded-3xl glass">
       <div class="flex items-center justify-between flex-wrap gap-2 mb-5">
         <div>
           <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide">Last 14 days</h2>
@@ -454,7 +473,7 @@
       {@const accentColor = spotlightQuote.quote.color || colorFromString(spotlightQuote.quote.id)}
       <a
         href="/rooms/{roomId}/quotes/{spotlightQuote.quote.id}"
-        class="mt-4 relative flex flex-col gap-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+        class="mt-4 relative flex flex-col gap-4 p-5 sm:p-6 rounded-3xl glass hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
       >
         <div class="absolute top-0 left-0 right-0 h-1" style="background-color: {accentColor};"></div>
 
@@ -500,7 +519,7 @@
 
     <!-- Mini leaderboards -->
     <div class="grid sm:grid-cols-3 gap-4 mt-4">
-      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 flex flex-col gap-3">
+      <div class="p-5 rounded-3xl glass flex flex-col gap-3">
         <div class="flex items-center gap-1.5 text-brand-500">
           <Flame size={13} />
           <span class="text-[11px] font-bold uppercase tracking-wide">Top quoter</span>
@@ -525,7 +544,7 @@
         {/if}
       </div>
 
-      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 flex flex-col gap-3">
+      <div class="p-5 rounded-3xl glass flex flex-col gap-3">
         <div class="flex items-center gap-1.5 text-amber-500">
           <Crown size={13} />
           <span class="text-[11px] font-bold uppercase tracking-wide">Most quoted</span>
@@ -550,7 +569,7 @@
         {/if}
       </div>
 
-      <div class="p-5 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 flex flex-col gap-3">
+      <div class="p-5 rounded-3xl glass flex flex-col gap-3">
         <div class="flex items-center gap-1.5 text-emerald-500">
           <Brain size={13} />
           <span class="text-[11px] font-bold uppercase tracking-wide">Quiz champ</span>
@@ -578,7 +597,7 @@
 
     <!-- Fun facts + tag cloud -->
     <div class="grid sm:grid-cols-2 gap-4 mt-4">
-      <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="p-5 sm:p-6 rounded-3xl glass">
         <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4">Fun facts</h2>
         <div class="flex flex-col gap-3.5">
           <div class="flex items-center gap-3">
@@ -628,7 +647,7 @@
         </div>
       </div>
 
-      <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+      <div class="p-5 sm:p-6 rounded-3xl glass">
         <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4 flex items-center gap-1.5">
           <Hash size={13} />
           Popular tags
@@ -657,7 +676,7 @@
     </div>
 
     <!-- Recent activity -->
-    <div class="mt-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
+    <div class="mt-4 p-5 sm:p-6 rounded-3xl glass">
       <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4">Recent activity</h2>
       {#if activityRows.length === 0}
         <div class="flex flex-col items-center justify-center py-8 text-center">
@@ -683,8 +702,16 @@
                   <span class="text-surface-400 dark:text-surface-500">— "{row.preview_text}"</span>
                 {/if}
               </p>
-              <span class="shrink-0 text-[10.5px] text-surface-400 dark:text-surface-500">
-                {new Date(row.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              <span
+                class="shrink-0 text-[10.5px] text-surface-400 dark:text-surface-500"
+                title={new Date(row.created_at).toLocaleString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit'
+                })}
+              >
+                {formatRelativeTime(row.created_at)}
               </span>
             </a>
           {/each}

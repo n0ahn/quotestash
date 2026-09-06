@@ -58,6 +58,7 @@
 </svelte:head>
 
 <div class="min-h-screen">
+	<div class="app-ambient default-blobs"></div>
 	<div class="fixed top-0 left-0 right-0 z-101 p-4 flex items-center justify-between px-4 bg-surface-950/50 sm:bg-surface-950/0 backdrop-blur-3xl sm:backdrop-blur-none">
   <a class="flex items-center gap-3 cursor-pointer" href="/">
     <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-500">
@@ -73,12 +74,12 @@
       <button
         type="button"
         onclick={() => (paletteOpen = true)}
-        class="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800 shadow-sm transition-colors"
+        class="glass-chrome hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full hover:bg-white/90 dark:hover:bg-surface-800/70 transition-all"
         aria-label="Open command palette"
       >
         <Command size={13} class="text-surface-400" />
         <span class="text-[11px] font-medium text-surface-400">Search</span>
-        <kbd class="flex items-center justify-center px-1.5 h-4.5 rounded text-[9.5px] font-semibold text-surface-400 bg-surface-100 dark:bg-surface-800 gap-0.5">
+        <kbd class="flex items-center justify-center px-1.5 h-4.5 rounded text-[9.5px] font-semibold text-surface-400 bg-black/[0.05] dark:bg-white/[0.06] gap-0.5">
           <Command size={8} class="text-surface-400" />K
         </kbd>
       </button>
@@ -94,7 +95,7 @@
 {/if}
 
 	<div
-		class="hidden fixed bottom-4 right-4 z-50 sm:flex items-center gap-0.5 rounded-full border border-surface-200 bg-white/80 p-1 shadow-sm backdrop-blur-md dark:border-surface-800 dark:bg-surface-900/80"
+		class="glass-chrome hidden fixed bottom-4 right-4 z-50 sm:flex items-center gap-0.5 rounded-full p-1"
 	>
 		{#each options as opt (opt.value)}
 			<button
