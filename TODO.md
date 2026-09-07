@@ -1,2 +1,2 @@
-- PWA/installeerbaar maken voor zowel desktop als telefoon
-- Add readme
+- Infinite scroll
+- Push notificatie

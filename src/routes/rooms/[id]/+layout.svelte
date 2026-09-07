@@ -3,7 +3,8 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabase';
-  import { LayoutDashboard, MessageSquareQuote, Trophy, Users, Puzzle, Crown, Settings } from 'lucide-svelte';
+  import { LayoutDashboard, MessageSquareQuote, Trophy, Users, Puzzle, Crown, Settings, Share2 } from 'lucide-svelte';
+  import ShareRoomCode from '$lib/components/ShareRoomCode.svelte';
   import type { Database } from '$lib/database.types';
 
   type Room = Database['public']['Tables']['rooms']['Row'];
@@ -13,6 +14,7 @@
   let room = $state<Room | null>(null);
   let loading = $state(true);
   let isOwner = $state(false);
+  let shareOpen = $state(false);
 
   const roomId = $derived(page.params.id!);
 
@@ -36,6 +38,10 @@
     return href === ''
       ? page.url.pathname === target
       : page.url.pathname.startsWith(target);
+  }
+
+  function closeShare() {
+    shareOpen = false;
   }
 
   async function loadRoom() {
@@ -88,7 +94,7 @@
             class="w-9 h-9 rounded-xl object-cover shrink-0 shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset,0_4px_12px_-2px_rgba(0,0,0,0.25)]"
           />
         {/if}
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <p class="text-[15px] font-bold text-surface-900 dark:text-surface-50 truncate flex items-center gap-1.5">
             {room.name}
             {#if isOwner}
@@ -96,6 +102,34 @@
             {/if}
           </p>
           <p class="text-[11px] font-mono tracking-widest text-surface-400 dark:text-surface-500 mt-0.5">{room.code}</p>
+        </div>
+
+        <div class="relative shrink-0">
+          <button
+            type="button"
+            onclick={() => (shareOpen = !shareOpen)}
+            aria-label="Share room"
+            title="Share room"
+            class="w-8 h-8 flex items-center justify-center rounded-xl text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+          >
+            <Share2 size={15} />
+          </button>
+
+          {#if shareOpen}
+            <button
+              class="fixed inset-0 z-40 cursor-default"
+              onclick={closeShare}
+              aria-label="Close share popover"
+            ></button>
+            <div
+              class="absolute left-0 top-full mt-2 w-60 max-w-[calc(100vw-2rem)] p-4 rounded-2xl glass-panel z-50 animate-fade-in"
+            >
+              <p class="text-[12px] font-semibold text-surface-700 dark:text-surface-200 mb-3">
+                Invite to {room.name}
+              </p>
+              <ShareRoomCode code={room.code} roomName={room.name} variant="compact" />
+            </div>
+          {/if}
         </div>
       </div>
 

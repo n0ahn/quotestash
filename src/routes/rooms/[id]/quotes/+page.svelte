@@ -81,6 +81,51 @@
     return result;
   });
 
+  // Infinite scroll: alle quotes worden nog steeds in één keer opgehaald
+  // (nodig voor de client-side filters/sort hierboven), maar we renderen
+  // ze in batches zodat lange lijsten niet in één keer de DOM in gaan.
+  const PAGE_SIZE = 20;
+  let visibleCount = $state(PAGE_SIZE);
+  let sentinel = $state<HTMLDivElement>();
+  let observer: IntersectionObserver | null = null;
+
+  const visibleQuotes = $derived(filteredQuotes.slice(0, visibleCount));
+  const hasMore = $derived(visibleCount < filteredQuotes.length);
+
+  // Zodra de filters/sort/zoekopdracht veranderen, begint de "pagina" weer
+  // vanaf het begin. We reageren bewust op de filter-inputs zelf (niet op
+  // filteredQuotes/quotes), zodat een realtime update van iemand anders'
+  // nieuwe quote de scroll-positie niet resettet.
+  $effect(() => {
+    filterUser;
+    filterQuoter;
+    filterTag;
+    filterFavorites;
+    hideNsfw;
+    sortBy;
+    searchQuery;
+    visibleCount = PAGE_SIZE;
+  });
+
+  function setupInfiniteScroll(node: HTMLDivElement) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore) {
+          visibleCount += PAGE_SIZE;
+        }
+      },
+      { rootMargin: '400px' }
+    );
+    observer.observe(node);
+
+    return {
+      destroy() {
+        observer?.disconnect();
+        observer = null;
+      }
+    };
+  }
+
   async function loadData() {
     loading = true;
 
@@ -549,7 +594,7 @@
     </div>
   {:else}
     <div class="columns-1 sm:columns-2 gap-4 *:mb-4">
-      {#each filteredQuotes as quote (quote.id)}
+      {#each visibleQuotes as quote (quote.id)}
         <div class="break-inside-avoid">
           <QuoteCard
             {quote}
@@ -565,6 +610,12 @@
         </div>
       {/each}
     </div>
+
+    {#if hasMore}
+      <div bind:this={sentinel} use:setupInfiniteScroll class="flex justify-center py-8">
+        <div class="w-5 h-5 rounded-full border-2 border-surface-200 dark:border-surface-700 border-t-brand-500 animate-spin"></div>
+      </div>
+    {/if}
   {/if}
 </div>
 

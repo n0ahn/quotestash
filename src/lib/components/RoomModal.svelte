@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { X, Camera, Loader2 } from 'lucide-svelte';
   import type { Database } from '$lib/database.types';
+  import ShareRoomCode from '$lib/components/ShareRoomCode.svelte';
 
   type Room = Database['public']['Tables']['rooms']['Row'];
 
@@ -13,6 +14,10 @@
   let joinCode = $state('');
   let loading = $state(false);
   let errorMsg = $state('');
+
+  // After a room is created we show a one-time "invite your friends" step
+  // right here, instead of dropping straight into the room.
+  let createdRoom = $state<Room | null>(null);
 
   let photoFile = $state<File | null>(null);
   let photoPreviewUrl = $state<string | null>(null);
@@ -83,13 +88,20 @@
     await supabase.from('room_members').insert({ room_id: room.id, user_id: user.id });
 
     if (photoFile) {
-      await uploadRoomPhoto(room.id, photoFile);
+      const newPhotoUrl = await uploadRoomPhoto(room.id, photoFile);
+      if (newPhotoUrl) room.photo_url = newPhotoUrl;
     }
 
     loading = false;
-    close();
     onCreated();
-    goto(`/rooms/${room.id}`);
+    createdRoom = room;
+  }
+
+  function finishCreate() {
+    if (!createdRoom) return;
+    const roomId = createdRoom.id;
+    close();
+    goto(`/rooms/${roomId}`);
   }
 
   async function handleJoin(e: SubmitEvent) {
@@ -133,6 +145,7 @@
     joinCode = '';
     errorMsg = '';
     tab = 'create';
+    createdRoom = null;
     clearPhoto();
   }
 </script>
@@ -153,6 +166,28 @@
       >
         <X size={18} />
       </button>
+
+      {#if createdRoom}
+        <h2 class="text-lg font-bold text-surface-900 dark:text-surface-50 mb-1">Room created 🎉</h2>
+        <p class="text-[13px] text-surface-500 dark:text-surface-400 mb-5">
+          Invite your friends to <span class="font-semibold">{createdRoom.name}</span> with the code below.
+        </p>
+
+        <div class="flex flex-col items-center gap-4 mb-5">
+          {#if createdRoom.photo_url}
+            <img src={createdRoom.photo_url} alt={createdRoom.name} class="w-16 h-16 rounded-2xl object-cover shadow-sm" />
+          {/if}
+          <ShareRoomCode code={createdRoom.code} roomName={createdRoom.name} variant="compact" />
+        </div>
+
+        <button
+          type="button"
+          onclick={finishCreate}
+          class="w-full h-11 rounded-2xl text-[14px] font-semibold text-surface-600 dark:text-surface-300 hover:text-surface-900 dark:hover:text-white transition-colors"
+        >
+          Skip for now
+        </button>
+      {:else}
 
       <h2 class="text-lg font-bold text-surface-900 dark:text-surface-50 mb-1">
         {tab === 'create' ? 'Create a room' : 'Join a room'}
@@ -272,6 +307,7 @@
             {loading ? 'Joining…' : 'Join room'}
           </button>
         </form>
+      {/if}
       {/if}
     </div>
   </div>

@@ -57,8 +57,10 @@
       rel="noopener noreferrer"
       aria-label="View QuoteStash on GitHub"
       class="
+        hidden
+        sm:flex
         glass-chrome
-        flex items-center justify-center
+        items-center justify-center
         w-9 h-9 rounded-full
         text-surface-700 dark:text-surface-200
         hover:bg-white/90 dark:hover:bg-surface-800/70

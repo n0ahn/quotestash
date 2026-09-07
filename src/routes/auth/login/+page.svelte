@@ -1,9 +1,12 @@
 <script lang="ts">
   import { supabase } from '$lib/supabase';
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import { Eye, EyeOff } from 'lucide-svelte';
 
   let email = $state('');
   let password = $state('');
+  let showPassword = $state(false);
   let loading = $state(false);
   let errorMsg = $state('');
 
@@ -26,7 +29,8 @@
       return;
     }
 
-    goto('/rooms');
+    const next = page.url.searchParams.get('next');
+    goto(next && next.startsWith('/') ? next : '/rooms');
   }
 </script>
 
@@ -59,14 +63,28 @@
 
         <div>
           <label for="password" class="block text-[12px] font-semibold text-surface-600 dark:text-surface-400 mb-1.5">Password</label>
-          <input
-            id="password"
-            type="password"
-            required
-            bind:value={password}
-            placeholder="••••••••"
-            class="w-full h-11 px-4 rounded-2xl text-[14px] bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-white/60 dark:focus:bg-white/[0.08] transition-all"
-          />
+          <div class="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              bind:value={password}
+              placeholder="••••••••"
+              class="w-full h-11 pl-4 pr-11 rounded-2xl text-[14px] bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/50 focus:bg-white/60 dark:focus:bg-white/[0.08] transition-all"
+            />
+            <button
+              type="button"
+              onclick={() => (showPassword = !showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              class="absolute inset-y-0 right-0 flex items-center justify-center w-11 text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
+            >
+              {#if showPassword}
+                <EyeOff size={17} />
+              {:else}
+                <Eye size={17} />
+              {/if}
+            </button>
+          </div>
         </div>
 
         {#if errorMsg}

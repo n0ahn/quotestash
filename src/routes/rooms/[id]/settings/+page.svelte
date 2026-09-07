@@ -3,9 +3,9 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { supabase, uploadRoomPhoto, removeRoomPhoto } from '$lib/supabase';
+  import ShareRoomCode from '$lib/components/ShareRoomCode.svelte';
   import {
     Settings,
-    Copy,
     Check,
     RefreshCw,
     Loader2,
@@ -48,7 +48,6 @@
 
   const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-  let copied = $state(false);
   let regenerating = $state(false);
   let regenError = $state('');
 
@@ -398,13 +397,6 @@
     room = { ...room, photo_url: null };
   }
 
-  async function copyCode() {
-    if (!room) return;
-    await navigator.clipboard.writeText(room.code);
-    copied = true;
-    setTimeout(() => (copied = false), 1500);
-  }
-
   async function regenerateCode() {
     if (!room || regenerating) return;
     regenerating = true;
@@ -611,23 +603,10 @@
           Share this code so others can join. Regenerating it invalidates the old code.
         </p>
 
-        <div class="flex items-center gap-2">
-          <div class="flex-1 h-10 px-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 flex items-center">
-            <span class="text-[14px] font-mono tracking-widest text-surface-900 dark:text-surface-50">{room.code}</span>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="flex-1">
+            <ShareRoomCode code={room.code} roomName={room.name} variant="full" />
           </div>
-          <button
-            type="button"
-            onclick={copyCode}
-            aria-label="Copy code"
-            title="Copy code"
-            class="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-          >
-            {#if copied}
-              <Check size={15} class="text-emerald-500" />
-            {:else}
-              <Copy size={15} />
-            {/if}
-          </button>
           <button
             type="button"
             onclick={regenerateCode}
