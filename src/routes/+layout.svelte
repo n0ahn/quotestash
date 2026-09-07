@@ -6,6 +6,7 @@
 	import ProfileMenu from '$lib/components/ProfileMenu.svelte';
 	import NotificationBell from '$lib/components/NotificationBell.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import InstallPrompt from '$lib/components/InstallPrompt.svelte';
 	import { dev } from '$app/environment';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 
@@ -55,6 +56,13 @@
 </script>
 <svelte:head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#7C6FF7" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="QuoteStash" />
 </svelte:head>
 
 <div class="min-h-screen">
@@ -93,6 +101,8 @@
 {#if showProfileMenu}
   <CommandPalette bind:open={paletteOpen} />
 {/if}
+
+<InstallPrompt />
 
 	<div
 		class="glass-chrome hidden fixed bottom-4 right-4 z-50 sm:flex items-center gap-0.5 rounded-full p-1"
