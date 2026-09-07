@@ -109,3 +109,58 @@ export async function removeAvatar(): Promise<boolean> {
 
     return true;
 }
+
+/**
+ * Uploads a group photo for a room to the `room-photos` storage bucket and
+ * updates the room's `photo_url`. The `rooms.photo_url` update itself is
+ * still gated by table-level RLS to the room owner; the storage path is
+ * namespaced under the uploader's own user id (see
+ * fix_room_photo_rls_v2.sql) since a lookup-based storage policy tied to
+ * `rooms.owner_id` is prone to RLS timing issues right after a room is
+ * created. Returns the new public URL, or null on failure.
+ */
+export async function uploadRoomPhoto(roomId: string, file: File): Promise<string | null> {
+    const {
+        data: { user }
+    } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${user.id}/${roomId}-photo.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('room-photos')
+        .upload(path, file, { upsert: true, cacheControl: '3600' });
+
+    if (uploadError) {
+        console.error('Failed to upload room photo', uploadError);
+        return null;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('room-photos').getPublicUrl(path);
+    const photoUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+
+    const { error: updateError } = await supabase.from('rooms').update({ photo_url: photoUrl }).eq('id', roomId);
+
+    if (updateError) {
+        console.error('Failed to save room photo url', updateError);
+        return null;
+    }
+
+    return photoUrl;
+}
+
+/**
+ * Removes a room's group photo.
+ */
+export async function removeRoomPhoto(roomId: string): Promise<boolean> {
+    const { error } = await supabase.from('rooms').update({ photo_url: null }).eq('id', roomId);
+
+    if (error) {
+        console.error('Failed to remove room photo', error);
+        return false;
+    }
+
+    return true;
+}

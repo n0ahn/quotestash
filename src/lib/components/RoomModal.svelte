@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { supabase } from '$lib/supabase';
+  import { supabase, uploadRoomPhoto } from '$lib/supabase';
   import { goto } from '$app/navigation';
-  import { X } from 'lucide-svelte';
+  import { X, Camera, Loader2 } from 'lucide-svelte';
   import type { Database } from '$lib/database.types';
 
   type Room = Database['public']['Tables']['rooms']['Row'];
@@ -13,6 +13,43 @@
   let joinCode = $state('');
   let loading = $state(false);
   let errorMsg = $state('');
+
+  let photoFile = $state<File | null>(null);
+  let photoPreviewUrl = $state<string | null>(null);
+  let photoInput = $state<HTMLInputElement>();
+
+  const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+  function handlePhotoChange(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    errorMsg = '';
+
+    if (!file.type.startsWith('image/')) {
+      errorMsg = 'Please choose an image file.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_BYTES) {
+      errorMsg = 'Image must be smaller than 5MB.';
+      input.value = '';
+      return;
+    }
+
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    photoFile = file;
+    photoPreviewUrl = URL.createObjectURL(file);
+  }
+
+  function clearPhoto() {
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    photoFile = null;
+    photoPreviewUrl = null;
+    if (photoInput) photoInput.value = '';
+  }
 
   function generateCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -44,6 +81,10 @@
     }
 
     await supabase.from('room_members').insert({ room_id: room.id, user_id: user.id });
+
+    if (photoFile) {
+      await uploadRoomPhoto(room.id, photoFile);
+    }
 
     loading = false;
     close();
@@ -92,6 +133,7 @@
     joinCode = '';
     errorMsg = '';
     tab = 'create';
+    clearPhoto();
   }
 </script>
 
@@ -136,6 +178,49 @@
 
       {#if tab === 'create'}
         <form onsubmit={handleCreate} class="space-y-4">
+          <div class="flex justify-center">
+            <div class="relative shrink-0 group/photo">
+              {#if photoPreviewUrl}
+                <img src={photoPreviewUrl} alt="Room photo preview" class="w-16 h-16 rounded-2xl object-cover shadow-sm" />
+              {:else}
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center bg-black/[0.03] dark:bg-white/[0.05] backdrop-blur-sm border border-black/[0.05] dark:border-white/[0.08] text-surface-400 dark:text-surface-500">
+                  <Camera size={20} />
+                </div>
+              {/if}
+
+              <button
+                type="button"
+                onclick={() => photoInput?.click()}
+                aria-label="Add group photo"
+                class="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/0 group-hover/photo:bg-black/40 text-white opacity-0 group-hover/photo:opacity-100 transition-all"
+              >
+                <Camera size={16} />
+              </button>
+
+              {#if photoPreviewUrl}
+                <button
+                  type="button"
+                  onclick={clearPhoto}
+                  aria-label="Remove photo"
+                  class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-surface-900 dark:bg-white text-white dark:text-surface-900 flex items-center justify-center shadow-sm"
+                >
+                  <X size={11} />
+                </button>
+              {/if}
+
+              <input
+                bind:this={photoInput}
+                type="file"
+                accept="image/*"
+                class="hidden"
+                onchange={handlePhotoChange}
+              />
+            </div>
+          </div>
+          <p class="text-center text-[11.5px] text-surface-400 dark:text-surface-500 -mt-2">
+            {photoPreviewUrl ? 'Group photo added' : 'Add a group photo (optional)'}
+          </p>
+
           <div>
             <label for="roomName" class="block text-[12px] font-semibold text-surface-600 dark:text-surface-400 mb-1.5">Room name</label>
             <input

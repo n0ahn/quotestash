@@ -30,12 +30,20 @@
 
   <div class="flex items-start justify-between">
     <div class="flex items-center gap-2.5 pr-2">
-      <div
-        class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[13px] font-bold shrink-0 shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset,0_4px_12px_-2px_rgba(0,0,0,0.25)]"
-        style="background-color: {accentColor};"
-      >
-        {room.name.charAt(0).toUpperCase()}
-      </div>
+      {#if room.photo_url}
+        <img
+          src={room.photo_url}
+          alt={room.name}
+          class="w-8 h-8 rounded-xl object-cover shrink-0 shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset,0_4px_12px_-2px_rgba(0,0,0,0.25)]"
+        />
+      {:else}
+        <div
+          class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[13px] font-bold shrink-0 shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset,0_4px_12px_-2px_rgba(0,0,0,0.25)]"
+          style="background-color: {accentColor};"
+        >
+          {room.name.charAt(0).toUpperCase()}
+        </div>
+      {/if}
       <h3 class="text-[15px] font-bold text-surface-900 dark:text-surface-50 line-clamp-1">
         {room.name}
       </h3>

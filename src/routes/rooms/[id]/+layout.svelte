@@ -80,14 +80,23 @@
              bg-white/20 backdrop-blur-xl dark:bg-surface-900/18
              px-4 pt-24 pb-6"
     >
-      <div class="px-2 mb-6">
-        <p class="text-[15px] font-bold text-surface-900 dark:text-surface-50 truncate flex items-center gap-1.5">
-          {room.name}
-          {#if isOwner}
-            <Crown size={13} class="text-amber-400 shrink-0" fill="currentColor" />
-          {/if}
-        </p>
-        <p class="text-[11px] font-mono tracking-widest text-surface-400 dark:text-surface-500 mt-0.5">{room.code}</p>
+      <div class="px-2 mb-6 flex items-center gap-2.5">
+        {#if room.photo_url}
+          <img
+            src={room.photo_url}
+            alt={room.name}
+            class="w-9 h-9 rounded-xl object-cover shrink-0 shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset,0_4px_12px_-2px_rgba(0,0,0,0.25)]"
+          />
+        {/if}
+        <div class="min-w-0">
+          <p class="text-[15px] font-bold text-surface-900 dark:text-surface-50 truncate flex items-center gap-1.5">
+            {room.name}
+            {#if isOwner}
+              <Crown size={13} class="text-amber-400 shrink-0" fill="currentColor" />
+            {/if}
+          </p>
+          <p class="text-[11px] font-mono tracking-widest text-surface-400 dark:text-surface-500 mt-0.5">{room.code}</p>
+        </div>
       </div>
 
       <nav class="flex flex-col gap-1 overflow-y-auto">

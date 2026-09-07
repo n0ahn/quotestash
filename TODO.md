@@ -1,2 +1,2 @@
-- PWA/installeerbaar maken voor zowel desktop als telefoon — nog niet gedaan
-- Betere UI, meer blur, UX — deels bezig (de modal-blur-over-topbar bug die je nu meldt hoort hierbij), verder nog open
+- PWA/installeerbaar maken voor zowel desktop als telefoon
+- Add readme

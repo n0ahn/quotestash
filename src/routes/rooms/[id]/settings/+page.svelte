@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { supabase } from '$lib/supabase';
+  import { supabase, uploadRoomPhoto, removeRoomPhoto } from '$lib/supabase';
   import {
     Settings,
     Copy,
@@ -19,7 +19,9 @@
     Star,
     Sparkles,
     Brain,
-    Search
+    Search,
+    Camera,
+    X
   } from 'lucide-svelte';
   import type { Database } from '$lib/database.types';
 
@@ -39,6 +41,12 @@
   let nameSaved = $state(false);
 
   const nameDirty = $derived(nameDraft.trim() !== '' && nameDraft.trim() !== room?.name);
+
+  let photoUploading = $state(false);
+  let photoError = $state('');
+  let photoInput = $state<HTMLInputElement>();
+
+  const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
   let copied = $state(false);
   let regenerating = $state(false);
@@ -342,6 +350,54 @@
     savingName = false;
   }
 
+  async function handlePhotoChange(e: Event) {
+    if (!room) return;
+    const input = e.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    photoError = '';
+
+    if (!file.type.startsWith('image/')) {
+      photoError = 'Please choose an image file.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_BYTES) {
+      photoError = 'Image must be smaller than 5MB.';
+      input.value = '';
+      return;
+    }
+
+    photoUploading = true;
+    const newUrl = await uploadRoomPhoto(roomId, file);
+    photoUploading = false;
+    input.value = '';
+
+    if (!newUrl) {
+      photoError = 'Failed to upload image. Please try again.';
+      return;
+    }
+
+    room = { ...room, photo_url: newUrl };
+  }
+
+  async function handleRemovePhoto() {
+    if (!room) return;
+    photoError = '';
+    photoUploading = true;
+    const ok = await removeRoomPhoto(roomId);
+    photoUploading = false;
+
+    if (!ok) {
+      photoError = 'Failed to remove photo. Please try again.';
+      return;
+    }
+
+    room = { ...room, photo_url: null };
+  }
+
   async function copyCode() {
     if (!room) return;
     await navigator.clipboard.writeText(room.code);
@@ -450,6 +506,73 @@
         <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-4">
           General
         </h2>
+
+        <span class="block text-[12px] font-medium text-surface-500 dark:text-surface-400 mb-1.5">
+          Group photo
+        </span>
+        <div class="flex items-center gap-3 mb-5">
+          <div class="relative shrink-0 group/photo">
+            {#if room.photo_url}
+              <img src={room.photo_url} alt={room.name} class="w-14 h-14 rounded-2xl object-cover shadow-sm" />
+            {:else}
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center bg-black/[0.03] dark:bg-white/[0.05] border border-surface-200 dark:border-surface-800 text-surface-400 dark:text-surface-500">
+                <Camera size={18} />
+              </div>
+            {/if}
+
+            <button
+              type="button"
+              onclick={() => photoInput?.click()}
+              disabled={photoUploading}
+              aria-label="Change group photo"
+              class="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/0 group-hover/photo:bg-black/40 text-white opacity-0 group-hover/photo:opacity-100 transition-all disabled:cursor-wait"
+            >
+              {#if photoUploading}
+                <Loader2 size={16} class="animate-spin" />
+              {:else}
+                <Camera size={16} />
+              {/if}
+            </button>
+
+            <input
+              bind:this={photoInput}
+              type="file"
+              accept="image/*"
+              class="hidden"
+              onchange={handlePhotoChange}
+            />
+          </div>
+
+          <div class="min-w-0">
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                onclick={() => photoInput?.click()}
+                disabled={photoUploading}
+                class="text-[12.5px] font-semibold text-brand-500 hover:text-brand-600 transition-colors disabled:opacity-50"
+              >
+                {room.photo_url ? 'Change photo' : 'Add photo'}
+              </button>
+              {#if room.photo_url}
+                <button
+                  type="button"
+                  onclick={handleRemovePhoto}
+                  disabled={photoUploading}
+                  class="flex items-center gap-1 text-[12.5px] font-medium text-surface-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                >
+                  <X size={12} />
+                  Remove
+                </button>
+              {/if}
+            </div>
+            <p class="text-[11.5px] text-surface-400 dark:text-surface-500 mt-0.5">
+              Shown on the room card and around the room.
+            </p>
+            {#if photoError}
+              <p class="text-[11.5px] text-red-500 mt-1">{photoError}</p>
+            {/if}
+          </div>
+        </div>
 
         <label for="room-name" class="block text-[12px] font-medium text-surface-500 dark:text-surface-400 mb-1.5">
           Room name

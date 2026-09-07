@@ -42,18 +42,21 @@ export interface Database {
           name: string;
           code: string;
           owner_id: string;
+          photo_url: string | null;
         };
         Insert: {
           id?: string;
           name: string;
           code?: string;
           owner_id: string;
+          photo_url?: string | null;
         };
         Update: {
           id?: string;
           name?: string;
           code?: string;
           owner_id?: string;
+          photo_url?: string | null;
         };
         Relationships: [
           {

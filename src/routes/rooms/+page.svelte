@@ -33,7 +33,7 @@
 
     const { data, error } = await supabase
       .from('room_members')
-      .select('room_id, rooms(id, name, code, owner_id)')
+      .select('room_id, rooms(id, name, code, owner_id, photo_url)')
       .eq('user_id', user.id);
 
     if (error) {
