@@ -1,2 +1,2 @@
-- Infinite scroll
+
 - Push notificatie

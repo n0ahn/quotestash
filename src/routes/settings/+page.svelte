@@ -19,8 +19,11 @@
     Quote,
     Loader2,
     Camera,
-    X
+    X,
+    Bell,
+    BellOff
   } from 'lucide-svelte';
+  import { pushSupported, isSubscribed, subscribeToPush, unsubscribeFromPush } from '$lib/push';
 
   // ---------- shared page state ----------
   let loading = $state(true);
@@ -240,6 +243,43 @@
     goto('/');
   }
 
+  // ---------- push notifications ----------
+  let pushAvailable = $state(false);
+  let pushEnabled = $state(false);
+  let pushBusy = $state(false);
+  let pushError = $state('');
+
+  async function refreshPushState() {
+    pushAvailable = pushSupported();
+    if (!pushAvailable) return;
+    pushEnabled = await isSubscribed();
+  }
+
+  async function togglePush() {
+    if (pushBusy) return;
+    pushBusy = true;
+    pushError = '';
+
+    try {
+      if (pushEnabled) {
+        const ok = await unsubscribeFromPush();
+        if (ok) pushEnabled = false;
+        else pushError = "Couldn't turn off notifications. Try again.";
+      } else {
+        const ok = await subscribeToPush();
+        if (ok) {
+          pushEnabled = true;
+        } else if (Notification.permission === 'denied') {
+          pushError = 'Notifications are blocked for this site in your browser settings.';
+        } else {
+          pushError = "Couldn't turn on notifications. Try again.";
+        }
+      }
+    } finally {
+      pushBusy = false;
+    }
+  }
+
   // ---------- lifecycle ----------
   async function loadData() {
     loading = true;
@@ -260,6 +300,8 @@
     mode = stored ?? 'auto';
 
     loading = false;
+
+    refreshPushState();
   }
 
   onMount(loadData);
@@ -466,6 +508,50 @@
       </div>
     {:else if activeTab === 'manage'}
       <div class="flex flex-col gap-4">
+        <div class="p-5 rounded-3xl glass">
+          <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+            <Bell size={13} />
+            Push notifications
+          </h2>
+          <p class="text-[11.5px] text-surface-400 dark:text-surface-500 mb-4">
+            Get notified when someone adds a quote, comments, or favorites something of yours — even when QuoteStash isn't open.
+          </p>
+
+          {#if !pushAvailable}
+            <p class="text-[12px] text-surface-500 dark:text-surface-400">
+              Push notifications aren't supported in this browser.
+            </p>
+          {:else}
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-[13px] font-medium text-surface-800 dark:text-surface-100">
+                  {pushEnabled ? 'Notifications are on' : 'Notifications are off'}
+                </p>
+                {#if pushError}
+                  <p class="text-[11.5px] text-red-500 mt-0.5">{pushError}</p>
+                {/if}
+              </div>
+              <button
+                type="button"
+                onclick={togglePush}
+                disabled={pushBusy}
+                class="h-9 px-4 rounded-xl text-[12.5px] font-semibold disabled:opacity-40 transition-colors flex items-center gap-1.5 shrink-0 {pushEnabled
+                  ? 'glass-inset text-surface-700 dark:text-surface-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.08]'
+                  : 'bg-brand-500 text-white hover:bg-brand-600'}"
+              >
+                {#if pushBusy}
+                  <Loader2 size={14} class="animate-spin" />
+                {:else if pushEnabled}
+                  <BellOff size={14} />
+                {:else}
+                  <Bell size={14} />
+                {/if}
+                {pushEnabled ? 'Turn off' : 'Turn on'}
+              </button>
+            </div>
+          {/if}
+        </div>
+
         <div class="p-5 rounded-3xl glass">
           <h2 class="text-[13px] font-bold text-surface-700 dark:text-surface-200 uppercase tracking-wide mb-1 flex items-center gap-1.5">
             <KeyRound size={13} />

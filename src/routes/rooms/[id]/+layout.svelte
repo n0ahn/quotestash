@@ -95,13 +95,21 @@
           />
         {/if}
         <div class="min-w-0 flex-1">
-          <p class="text-[15px] font-bold text-surface-900 dark:text-surface-50 truncate flex items-center gap-1.5">
-            {room.name}
+          <p class="text-[13px] font-bold text-surface-900 dark:text-surface-50 break-words flex items-center gap-1.5">
+            <span class="min-w-0 break-words">{room.name}</span>
+
             {#if isOwner}
-              <Crown size={13} class="text-amber-400 shrink-0" fill="currentColor" />
+              <Crown
+                size={13}
+                class="text-amber-400 shrink-0"
+                fill="currentColor"
+              />
             {/if}
           </p>
-          <p class="text-[11px] font-mono tracking-widest text-surface-400 dark:text-surface-500 mt-0.5">{room.code}</p>
+
+          <p class="text-[11px] font-mono tracking-widest text-surface-400 dark:text-surface-500 mt-0.5">
+            {room.code}
+          </p>
         </div>
 
         <div class="relative shrink-0">
